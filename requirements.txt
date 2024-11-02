@@ -1,0 +1,3 @@
+pygame
+pythonosc
+go2_webrtc_driver
