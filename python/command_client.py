@@ -9,37 +9,92 @@ import random
 import time
 import json
 from pythonosc import tcp_client
+from go2_webrtc_driver.constants import *
+from config import *
+from tools import *
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", default="127.0.0.1", help="The ip of the OSC server")
+
     parser.add_argument(
-        "--port", type=int, default=5005, help="The port the OSC server is listening on"
-    )
-    parser.add_argument(
-        "--id", type=int, default=1008, help="The api id"
+        "--ip", default=SERVER_IP, help="The ip of the OSC server"
     )
 
     parser.add_argument(
-        "--topic", type=str, default="SPORT_MOD", help="The name mode"
+        "--port", type=int, default=SERVER_PORT, help="The port the OSC server is listening on"
     )
 
     parser.add_argument(
-        "--name", type=str, default="", help="The name mode"
+        "--move-api-id", type=int, dest='api_id', default=None, help="Command api id"
+    )
+
+    parser.add_argument(
+        "--move-name", type=str, dest='move_name', default=None, help="Command name"
+    )
+
+    parser.add_argument(
+        "--topic", type=str, default="SPORT_MOD", help="RTC topic"
+    )
+
+    parser.add_argument(
+        "--param-name", type=str, dest='param_name', default="", help="Parameter name"
+    )
+
+    parser.add_argument(
+        "--param-data", default=False, dest='param_data', action='store_true', help="Parameter data"
+    )
+
+    parser.add_argument(
+        "--no-param-data", default=False, dest='no_param_data', action='store_true', help="Avoid sending parameter data"
+    )
+
+
+    parser.add_argument(
+        "--dry-run", default=False, dest='dry_run', action='store_true', help="Dry run mode"
     )
 
     args = parser.parse_args()
+
+    if args.api_id is not None:
+        if args.api_id in SPORT_CMD.values():
+            api_id = args.api_id
+        else:
+            raise SystemExit("api_id not in valid commands")
+    elif args.move_name is not None:
+        if args.move_name in SPORT_CMD:
+            api_id = SPORT_CMD[args.move_name]
+        else:
+            raise SystemExit("Name not in valid commands")
+    else:
+        raise SystemExit("Can't publish without valid api_id")
+
     payload = {
-        "api_id": args.id,
-        "parameter": ""
+        "topic": "",
+        "api_id": api_id,
+        "parameter": {}
     }
 
-    if args.name:
-        payload["parameter"] = {"name": args.name}
+    # This is confusing but oh well
+    if args.param_name:
+        payload["parameter"] = {"name": args.param_name}
 
-    if args.topic:
-        payload["topic"] = args.topic
+    if args.param_data is not None:
+        if "name" in payload["parameter"]:
+            if not args.no_param_data:
+                payload["parameter"]["data"] = args.param_data
+        else:
+            if not args.no_param_data:
+                payload["parameter"] = {"data": args.param_data}
 
-    client = tcp_client.SimpleTCPClient(args.ip, args.port)
+    if args.topic in RTC_TOPIC:
+        payload["topic"] = RTC_TOPIC[args.topic]
+    else:
+        raise SystemExit("RTC topic not valid")
 
-    client.send_message("/dog", json.dumps(payload))
+    if DEBUG:
+        std_out (f"Command: {json.dumps(payload)}")
+
+    if not args.dry_run:
+        client = tcp_client.SimpleTCPClient(args.ip, args.port)
+        client.send_message(CMD_TOPIC, json.dumps(payload))
