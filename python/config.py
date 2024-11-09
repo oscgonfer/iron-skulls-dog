@@ -36,7 +36,7 @@ BUTTONS = {
 }
 
 AXES = {
-    0: "Axis 0", # Lef Axis right (-1)/left (1)
+    0: "Axis 0", # Left Axis right (-1)/left (1)
     1: "Axis 1", # Left Axis up (1)/down (-1)
     2: "Axis 2", # Right Axis right (-1)/left (1)
     3: "Axis 3"  # Right Axis up (1)/down (-1)
