@@ -1,9 +1,3 @@
-"""Small example OSC client
-
-This program sends 10 random values between 0.0 and 1.0 to the /filter address,
-waiting for 1 seconds between each value.
-"""
-
 import argparse
 import random
 import time
@@ -92,8 +86,7 @@ if __name__ == "__main__":
     else:
         raise SystemExit("RTC topic not valid")
 
-    if DEBUG:
-        std_out (f"Command: {json.dumps(payload)}")
+    std_out (f"Command: {json.dumps(payload)}")
 
     if not args.dry_run:
         client = tcp_client.SimpleTCPClient(args.ip, args.port)
