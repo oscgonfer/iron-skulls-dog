@@ -29,12 +29,11 @@ import pygame
 from dotenv import load_dotenv
 load_dotenv()
 
-pygame.init()
-pygame.joystick.init()
-
 from pythonosc import tcp_client
 from go2_webrtc_driver.constants import *
 from tools import *
+
+from joystick_handler import JoystickState
 
 def gen_command_payload(command_name):
 
@@ -66,50 +65,15 @@ def handle_client_msg(client, topic, msg):
             client.close()
             raise SystemExit("Broken pipe. Disconnected")
 
-async def get_joystick_values(joystick = None, joystick_nums = {}):
-    # This is necessary to smooth things up
-    pygame.event.pump()
-
-    if joystick is not None:
-
-        d = {}
-
-        for axe in range(joystick_nums["axes"]):
-            if axe not in AXES: continue
-            d[AXES[axe]] = round(joystick.get_axis(axe), 1) * -1
-
-        for button in range(joystick_nums["buttons"]):
-            if button not in BUTTONS: continue
-            d[BUTTONS[button]] = joystick.get_button(button)
-
-        for hat in range(joystick_nums["buttons"]):
-            if hat not in HATS: continue
-            d[HATS[hat]] = joystick.get_hat(hat)
-
-        for ball in range(joystick_nums["balls"]):
-            if ball not in BALLS: continue
-            d[BALLS[ball]] = joystick.get_ball(ball)
-
-        return d
-
-    return DEF_JOY
-
 async def start_joy_bridge(client = None, joystick=None):
 
-    # Get numbers at the beginning to avoid overhead
-    joystick_nums = {
-        'axes': joystick.get_numaxes(),
-        'balls': joystick.get_numballs(),
-        'buttons': joystick.get_numbuttons(),
-        'hats': joystick.get_numhats()
-    }
+    joystick_state = JoystickState(joystick)
 
     # TODO Make this listen to topics?
     robot_stat = "BalanceStand"
 
     while True:
-        joystick_values = await get_joystick_values(
-            joystick=joystick, joystick_nums=joystick_nums)
+        joystick_values = await joystick_state.get_item_values()
 
         if DEBUG:
             std_out (f"Joystick values: {joystick_values}")
@@ -133,6 +97,7 @@ async def start_joy_bridge(client = None, joystick=None):
 
             if robot_cmd is not None: handle_client_msg(client, MOVE_TOPIC, robot_cmd)
 
+        # TODO asign to the hat
         # We are moving the hat
         # if any([joystick_values[item] for item in joystick_values if 'Hat' in item]):
         #     if DEBUG:
@@ -152,8 +117,7 @@ async def start_joy_bridge(client = None, joystick=None):
 
         # We are pressing a button
         if any([joystick_values[item] for item in joystick_values if ('Axis' not in item and 'Hat' not in item)]):
-            if DEBUG:
-                std_out ('A button was pressed!')
+            std_out ('A button was pressed!')
 
             for item in joystick_values:
                 if 'Axis' in item or 'Hat' in item: continue
@@ -161,21 +125,13 @@ async def start_joy_bridge(client = None, joystick=None):
                 if joystick_values[item]:
                     if BUTTON_CMD[item] is not None:
                         robot_cmd = gen_command_payload(BUTTON_CMD[item])
+                        std_out (f'Robot command {robot_cmd}')
 
-                        # Check if we can change status
-                        if BUTTON_CMD[item] == "BalanceStand":
-                            robot_stat = "BalanceStand"
-                            if DEBUG:
-                                std_out (f'Robot status {robot_stat}')
-                        if BUTTON_CMD[item] == "StandUp":
-                            robot_stat = "StandUp"
-                            if DEBUG:
-                                std_out (f'Robot status {robot_stat}')
+                        robot_stat = BUTTON_CMD[item]
+                        std_out (f'Robot status {robot_stat}')
 
-                        if DEBUG:
-                            std_out (f'Robot command {robot_cmd}')
-
-                        if robot_cmd is not None: handle_client_msg(client, CMD_TOPIC, robot_cmd)
+                        if robot_cmd is not None:
+                            handle_client_msg(client, CMD_TOPIC, robot_cmd)
 
         await asyncio.sleep(0.001)
 
@@ -195,8 +151,9 @@ async def main():
     finally:
         pygame.joystick.quit()
 
-
 if __name__ == '__main__':
+    pygame.init()
+    pygame.joystick.init()
 
     if pygame.joystick.get_count() > 0:
         joystick = pygame.joystick.Joystick(0)
@@ -204,8 +161,8 @@ if __name__ == '__main__':
     else:
         joystick = None
 
+    std_out('Starting TCP client...')
     client = None
-    if not DRY_RUN:
-        client = tcp_client.SimpleTCPClient(SERVER_IP, SERVER_PORT)
+    client = tcp_client.SimpleTCPClient(SERVER_IP, SERVER_PORT)
 
     asyncio.run(main())
