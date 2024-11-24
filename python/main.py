@@ -20,6 +20,24 @@ from pythonosc.dispatcher import Dispatcher
 from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection, WebRTCConnectionMethod
 from go2_webrtc_driver.constants import *
 
+async def tcp_echo_client(message):
+    reader, writer = await asyncio.open_connection(
+                    LOGGER_IP, LOGGER_PORT)
+    # print(f'Send: {message!r}')
+    writer.write(json.dumps(message).encode())
+    await writer.drain()
+
+    # data = await reader.read(100)
+    # print(f'Received: {data.decode()!r}')
+
+    # print('Close the connection')
+    writer.close()
+    await writer.wait_closed()
+
+def lowstate_callback(message):
+    current_message = message['data']
+    asyncio.gather(tcp_echo_client(current_message))
+
 async def command_handler(address, *args):
 
     payload = json.loads(args[0])
@@ -94,4 +112,8 @@ if __name__ == "__main__":
         loop.run_until_complete(connect_dog(conn))
         loop.run_until_complete(set_motion_switcher_status(conn,
             desired_mode = 'normal'))
+
+        if TCP_LOG:
+            conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LOW_STATE'], lowstate_callback)
+
     loop.run_until_complete(main())

@@ -2,10 +2,15 @@
 DEBUG=True
 DRY_RUN=False
 TIMESTAMP=True
+TCP_LOG=True
 
 # OSC Server IP and port
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 6005
+
+# TCP Logger
+LOGGER_IP = "127.0.0.1"
+LOGGER_PORT = 7005
 
 # TCP Message filter
 GEN_FILTER = "/dog*"
