@@ -1,6 +1,8 @@
 from config import *
 import datetime
 import sys
+import asyncio
+import json
 
 def std_out(msg, priority=False):
     if DEBUG or priority:
@@ -9,25 +11,116 @@ def std_out(msg, priority=False):
         else:
             print (msg)
 
+async def tcp_state_client(message):
+    reader, writer = await asyncio.open_connection(
+                    LOGGER_IP, LOGGER_PORT)
+    writer.write(json.dumps(message).encode())
+    await writer.drain()
+
+    writer.close()
+    await writer.wait_closed()
+
+# TODO UPDATE TO FULL STATE
 def display_data(message):
+    # LOWSTATE
+    # imu_state = message['imu_state']['rpy']
+    # motor_state = message['motor_state']
+    # bms_state = message['bms_state']
+    # foot_force = message['foot_force']
+    # temperature_ntc1 = message['temperature_ntc1']
+    # power_v = message['power_v']
+
+    # SPORTSMODE
+    # imu_state = message['imu_state']
+    # quaternion = imu_state['quaternion']
+    # gyroscope = imu_state['gyroscope']
+    # accelerometer = imu_state['accelerometer']
+    # rpy = imu_state['rpy']
+    # temperature = imu_state['temperature']
+    # mode = message['mode']
+    # progress = message['progress']
+    # gait_type = message['gait_type']
+    # foot_raise_height = message['foot_raise_height']
+    # position = message['position']
+    # body_height = message['body_height']
+    # velocity = message['velocity']
+    # yaw_speed = message['yaw_speed']
+    # range_obstacle = message['range_obstacle']
+    # foot_force = message['foot_force']
+    # foot_position_body = message['foot_position_body']
+    # foot_speed_body = message['foot_speed_body']
+
+    # MULTIPLESTATE
+    # body_height = message['bodyHeight']
+    # brightness = message['brightness']
+    # foot_raise_height = message['footRaiseHeight']
+    # obstacles_avoid_switch = message['obstaclesAvoidSwitch']
+    # speed_level = message['speedLevel']
+    # uwb_switch = message['uwbSwitch']
+    # volume = message['volume']
 
     # Extracting data from the message
-    imu_state = message['imu_state']['rpy']
-    motor_state = message['motor_state']
-    bms_state = message['bms_state']
-    foot_force = message['foot_force']
-    temperature_ntc1 = message['temperature_ntc1']
-    power_v = message['power_v']
+    lowstate=message['LOW_STATE']
+    multiplestate=message['MULTIPLE_STATE']
+    sportstate=message['LF_SPORT_MOD_STATE']
+
+    motor_state = lowstate['motor_state']
+    bms_state = lowstate['bms_state']
+    foot_force = lowstate['foot_force']
+    temperature_ntc1 = lowstate['temperature_ntc1']
+    power_v = lowstate['power_v']
+
+    imu_state = sportstate['imu_state']
+    quaternion = imu_state['quaternion']
+    gyroscope = imu_state['gyroscope']
+    accelerometer = imu_state['accelerometer']
+    rpy = imu_state['rpy']
+    temperature = imu_state['temperature']
+    mode = sportstate['mode']
+    progress = sportstate['progress']
+    gait_type = sportstate['gait_type']
+    foot_raise_height = sportstate['foot_raise_height']
+    position = sportstate['position']
+    body_height = sportstate['body_height']
+    velocity = sportstate['velocity']
+    yaw_speed = sportstate['yaw_speed']
+    range_obstacle = sportstate['range_obstacle']
+    foot_force = sportstate['foot_force']
+    foot_position_body = sportstate['foot_position_body']
+    foot_speed_body = sportstate['foot_speed_body']
+
+    # body_height = multiplestate['bodyHeight']
+    print (message)
+    brightness = multiplestate['brightness']
+    # foot_raise_height = multiplestate['footRaiseHeight']
+    obstacles_avoid_switch = multiplestate['obstaclesAvoidSwitch']
+    speed_level = multiplestate['speedLevel']
+    uwb_switch = multiplestate['uwbSwitch']
+    volume = multiplestate['volume']
 
     # Clear the entire screen and reset cursor position to top
     sys.stdout.write("\033[H\033[J")
 
     # Print the Go2 Robot Status
-    print("Go2 Robot Status (LowState)")
+    print("Go2 Robot Status")
     print("===========================")
+    print(f"Mode: {mode}")
+    print(f"Progress: {progress}")
+    print(f"Gait Type: {gait_type}")
+    print(f"Foot Raise Height: {foot_raise_height} m")
+    print(f"Position: {position}")
+    print(f"Body Height: {body_height} m")
+    print(f"Velocity: {velocity}")
+    print(f"Yaw Speed: {yaw_speed}")
+    print(f"Range Obstacle: {range_obstacle}")
 
     # IMU State (RPY)
-    print(f"IMU - RPY: Roll: {imu_state[0]}, Pitch: {imu_state[1]}, Yaw: {imu_state[2]}")
+    print(f"IMU - RPY: Roll: {rpy[0]}, Pitch: {rpy[1]}, Yaw: {rpy[2]}")
+    print(f"IMU - Quaternion: {quaternion}")
+    print(f"IMU - Gyroscope: {gyroscope}")
+    print(f"IMU - Accelerometer: {accelerometer}")
+    print(f"IMU - RPY: {rpy}")
+    print(f"IMU - Temperature: {temperature}°C")
 
   # Compact Motor States Display (Each motor on one line)
     print("\nMotor States (q, Temperature, Lost):")
@@ -47,6 +140,14 @@ def display_data(message):
 
     # Foot Force
     print(f"\nFoot Force: {foot_force}")
+    print(f"Foot Position (Body): {foot_position_body}")
+    print(f"Foot Speed (Body): {foot_speed_body}")
+
+    print(f"Brightness:            {brightness}")
+    print(f"Obstacles Avoid Switch: {'Enabled' if obstacles_avoid_switch else 'Disabled'}")
+    print(f"Speed Level:           {speed_level}")
+    print(f"UWB Switch:            {'On' if uwb_switch else 'Off'}")
+    print(f"Volume:                {volume}/10")
 
     # Additional Sensors
     print(f"Temperature NTC1: {temperature_ntc1}°C")
