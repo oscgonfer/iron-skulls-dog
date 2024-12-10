@@ -3,27 +3,64 @@ DEBUG=True
 DRY_RUN=False
 TIMESTAMP=True
 TCP_LOG=True
+CAPTURE_PATH = 'capture'
 
 # OSC Server IP and port
 SERVER_IP = "127.0.0.1"
-SERVER_PORT = 6005
+SERVER_PORT = 9996
+OSSIA_PORT = 9997
 
 # TCP Logger
 LOGGER_IP = "127.0.0.1"
 LOGGER_PORT = 7005
 
 # TCP Message filter
-GEN_FILTER = "/dog*"
 PRE_FILTER = "/dog"
-CMD_FILTER = f"{PRE_FILTER}/command*"
-CMD_TOPIC = CMD_FILTER.replace("*","")
+
+SPECIAL_FILTER = f"{PRE_FILTER}/special*"
+SPECIAL_TOPIC = SPECIAL_FILTER.replace("*","")
+
 MOVE_FILTER = f"{PRE_FILTER}/move*"
 MOVE_TOPIC = MOVE_FILTER.replace("*","")
+
+SWITCHER_FILTER = f"{PRE_FILTER}/switch*"
+SWITCHER_TOPIC = SWITCHER_FILTER.replace("*","")
+
+VUI_FILTER = f"{PRE_FILTER}/vui*"
+VUI_TOPIC = VUI_FILTER.replace("*","")
+
 AUDIO_FILTER = f"{PRE_FILTER}/audio*"
+
+SAFE_FILTER = f"{PRE_FILTER}/safety*"
+SAFE_TOPIC = SAFE_FILTER.replace("*","")
+
+CAPTURE_FILTER = f"{PRE_FILTER}/capture*"
+CAPTURE_TOPIC = CAPTURE_FILTER.replace("*","")
+
+# TOPICS = [CMD_TOPIC, SWITCHER_TOPIC, MOVE_TOPIC, VUI_TOPIC]
+
+VUI_CMD = {
+    "Color": 1007,
+    "Brightness": 1005,
+    "SetVolume": 1003
+}
 
 # JOYSTICK
 # 8bitDo SN30Pro+
-JOY_SENSE = 0.2
+JOY_SENSE = {
+    "speed": 0.6,
+    "roll": 0.75,
+    "yaw": 0.6,
+    "pitch": 0.75
+}
+
+VAL_LIMITS = {
+    "speed": [0, 1],
+    "roll": [0, 0.75],
+    "yaw": [0, 0.6],
+    "pitch": [0, 0.75]
+}
+
 BUTTONS = {
     0: "A",
     1: "B",
@@ -81,16 +118,19 @@ DEF_JOY = {
 BUTTON_CMD = {
     "A": "StandDown",
     "B": "StandUp",
-    "S": None,
+    "S": "Release",
     "X": "Sit",
     "Y": "Hello",
     "L1": None,
     "R1": None,
     "L2": None,
     "R2": None,
-    "SELECT": None,
+    "SELECT": "RecoveryStand",
     "START": None,
     "LBALL": "BalanceStand",
-    "RBALL": "Move"
+    "RBALL": "Pose"
 }
 
+SAFETY_CMD = [
+    "Release"
+]

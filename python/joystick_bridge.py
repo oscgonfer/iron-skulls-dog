@@ -22,6 +22,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from config import *
+from command import *
 import asyncio
 import json
 import os
@@ -38,24 +39,68 @@ from joystick_handler import JoystickState
 def gen_command_payload(command_name):
 
     payload = {
-        "parameter": "",
-        "api_id": SPORT_CMD[command_name],
         "topic": RTC_TOPIC["SPORT_MOD"],
+        "options": {
+            "parameter": "",
+            "api_id": SPORT_CMD[command_name]
+        }
     }
 
-    return json.dumps(payload)
+    return payload
 
 def gen_movement_payload(x: float, y: float, z: float):
-    x = round(x * JOY_SENSE, 2)
-    y = round(y * JOY_SENSE, 2)
+    x = round(x * JOY_SENSE["speed"], 2)
+    y = round(y * JOY_SENSE["speed"], 2)
 
     payload = {
-        "parameter": json.dumps({"x": x, "y": y, "z": z}),
-        "api_id": SPORT_CMD["Move"],
         "topic": RTC_TOPIC["SPORT_MOD"],
+        "options": {
+            "parameter": json.dumps({"x": x, "y": y, "z": z}),
+            "api_id": SPORT_CMD["Move"]
+        }
     }
 
-    return json.dumps(payload)
+    return payload
+
+def gen_euler_payload(roll: float, pitch: float, yaw: float):
+    _roll = round(roll * JOY_SENSE["roll"], 2)
+    _pitch = round(pitch * JOY_SENSE["pitch"], 2)
+    _yaw = round(yaw * JOY_SENSE["yaw"], 2)
+
+    payload = {
+        "topic": RTC_TOPIC["SPORT_MOD"],
+        "options": {
+            "parameter": json.dumps({"x": _roll, "y": _pitch, "z": _yaw}),
+            "api_id": SPORT_CMD["Euler"]
+        }
+    }
+
+    return payload
+
+def handle_hat(joystick_values):
+    # Handles the hat // Changes joystick sensitivity
+    if joystick_values[0]:
+        JOY_SENSE["speed"] = min(VAL_LIMITS["speed"][1], JOY_SENSE["speed"] + 0.1)
+    elif joystick_values[1]:
+        JOY_SENSE["speed"] = max(VAL_LIMITS["speed"][0], JOY_SENSE["speed"] - 0.1)
+
+    if joystick_values[2]:
+        JOY_SENSE["roll"] = min(VAL_LIMITS["roll"][1], JOY_SENSE["roll"] + 0.1)
+        JOY_SENSE["pitch"] = min(VAL_LIMITS["pitch"][1], JOY_SENSE["pitch"] + 0.1)
+        JOY_SENSE["yaw"] = min(VAL_LIMITS["yaw"][1], JOY_SENSE["yaw"] + 0.1)
+    elif joystick_values[3]:
+        JOY_SENSE["roll"] = max(VAL_LIMITS["roll"][0], JOY_SENSE["roll"] - 0.1)
+        JOY_SENSE["pitch"] = max(VAL_LIMITS["pitch"][0], JOY_SENSE["pitch"] - 0.1)
+        JOY_SENSE["yaw"] = max(VAL_LIMITS["yaw"][0], JOY_SENSE["yaw"] - 0.1)
+
+    std_out(f'New joysense speed: {JOY_SENSE}')
+
+def gen_safe_command(command):
+    payload = {
+        "command": command
+    }
+
+    return payload
 
 def handle_client_msg(client, topic, msg):
     if client is not None:
