@@ -10,7 +10,8 @@ from config import *
 
 # Extras
 from tools import *
-from dog import *
+from dog import Dog
+from osc_handler import OscHandler
 
 # TCP SERVER
 from pythonosc.osc_tcp_server import AsyncOSCTCPServer
@@ -32,15 +33,20 @@ if __name__ == "__main__":
         # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalAP)
     else:
         std_out("Running dry..")
+        conn = None
 
     dog = Dog(conn)
-
+    osc_handler = OscHandler(dog)
     std_out ("Starting handlers...")
     dispatcher = Dispatcher()
-    dispatcher.map(CMD_FILTER, dog.command_handler)
-    dispatcher.map(MOVE_FILTER, dog.movement_handler)
-    dispatcher.map(VUI_FILTER, dog.command_handler)
-    dispatcher.map(AUDIO_FILTER, dog.audio_handler)
+    # dispatcher.map(SPECIAL_CMD_FILTER, dog.command_handler)
+    dispatcher.map(SPECIAL_FILTER, osc_handler.handle_special_command)
+    dispatcher.map(MOVE_FILTER, osc_handler.handle_movement_command)
+    dispatcher.map(CAPTURE_FILTER, osc_handler.handler_capture_command)
+    # dispatcher.map(MOVE_FILTER, dog.movement_handler)
+    # dispatcher.map(VUI_FILTER, dog.command_handler)
+    # dispatcher.map(AUDIO_FILTER, dog.audio_handler)
+    # dispatcher.map(SWITCHER_TOPIC, dog.command_handler)
 
     std_out ("Starting worker...")
     loop = asyncio.new_event_loop()

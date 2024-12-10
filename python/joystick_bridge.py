@@ -69,7 +69,7 @@ async def start_joy_bridge(client = None, joystick=None):
 
     joystick_state = JoystickState(joystick)
 
-    # TODO Make this listen to topics?
+    # TODO Make this listen to topics
     robot_stat = "BalanceStand"
 
     while True:
@@ -78,7 +78,7 @@ async def start_joy_bridge(client = None, joystick=None):
         if DEBUG:
             std_out (f"Joystick values: {joystick_values}")
 
-        robot_cmd = None
+        cmd = None
 
         # We are moving the axes
         if any([joystick_values[item] for item in joystick_values if 'Axis' in item]):
@@ -86,34 +86,30 @@ async def start_joy_bridge(client = None, joystick=None):
                 std_out ('Movement with axis!')
 
             if robot_stat == "BalanceStand":
-                robot_cmd = gen_movement_payload(
+                cmd = MovementCommand(gen_movement_payload(
                     x = joystick_values["Axis 1"],
                     y = joystick_values["Axis 0"],
                     z = joystick_values["Axis 2"]
-                )
+                ))
+            elif robot_stat == 'Pose':
+                cmd = MovementCommand(gen_euler_payload(
+                    roll = joystick_values["Axis 0"],
+                    pitch = joystick_values["Axis 1"],
+                    yaw = joystick_values["Axis 2"]
+                ))
 
-            if DEBUG:
-                std_out (f'Robot command: {robot_cmd}')
+            if cmd is not None:
+                if DEBUG:
+                    std_out (f'Robot command: {cmd.as_dict()}')
+                handle_client_msg(client, MOVE_TOPIC, cmd.to_json())
 
-            if robot_cmd is not None: handle_client_msg(client, MOVE_TOPIC, robot_cmd)
-
-        # TODO asign to the hat
         # We are moving the hat
-        # if any([joystick_values[item] for item in joystick_values if 'Hat' in item]):
-        #     if DEBUG:
-        #         std_out ('Movement with hat!')
+        if any([joystick_values[item] for item in joystick_values if 'Hat' in item]):
 
-            # robot_cmd = gen_movement_payload(
-            #     x = joystick_values["Axis 1"],
-            #     y = joystick_values["Axis 0"],
-            #     z = joystick_values["Axis 2"]
-            # )
-
-            # if DEBUG:
-            #     std_out ('Robot command ', robot_cmd)
-
-            # if client is not None:
-            #     client.send_message("/dog/move", robot_cmd)
+            for item in joystick_values:
+                if 'Hat' not in item: continue
+                if any(joystick_values[item]):
+                    handle_hat(joystick_values[item])
 
         # We are pressing a button
         if any([joystick_values[item] for item in joystick_values if ('Axis' not in item and 'Hat' not in item)]):
@@ -124,14 +120,20 @@ async def start_joy_bridge(client = None, joystick=None):
 
                 if joystick_values[item]:
                     if BUTTON_CMD[item] is not None:
-                        robot_cmd = gen_command_payload(BUTTON_CMD[item])
-                        std_out (f'Robot command {robot_cmd}')
 
-                        robot_stat = BUTTON_CMD[item]
-                        std_out (f'Robot status {robot_stat}')
+                        if BUTTON_CMD[item] in SAFETY_CMD:
+                            cmd = SpecialCommand(gen_safe_command(BUTTON_CMD[item]))
+                            std_out (f'Robot command {cmd.as_dict()}')
+                            handle_client_msg(client, SAFE_TOPIC, cmd.to_json())
+                        else:
+                            cmd = SpecialCommand(gen_command_payload(BUTTON_CMD[item]))
+                            std_out (f'Robot command {cmd.as_dict()}')
 
-                        if robot_cmd is not None:
-                            handle_client_msg(client, CMD_TOPIC, robot_cmd)
+                            robot_stat = BUTTON_CMD[item]
+                            std_out (f'Robot status {robot_stat}')
+
+                            if cmd is not None:
+                                handle_client_msg(client, SPECIAL_TOPIC, cmd.to_json())
 
         await asyncio.sleep(0.001)
 

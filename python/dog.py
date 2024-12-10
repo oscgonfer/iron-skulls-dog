@@ -8,7 +8,8 @@ from go2_webrtc_driver.constants import *
 
 # TODO Make this stateful
 class Dog:
-    def __init__(self, conn=None):
+    def __init__(self, conn=None, dry_run = DRY_RUN):
+        # State
         self.state = {
             'LOW_STATE': None,
             'LF_SPORT_MOD_STATE': None,
@@ -16,11 +17,39 @@ class Dog:
         }
         self.conn = conn
         self.lock = asyncio.Lock()
+        self.dry_run = dry_run
 
     async def connect(self):
         return await self.conn.connect()
 
+    async def send_async_command(self, command):
+        std_out(f"Command topic: {command.topic}")
+        std_out(f"Command options: {command.options}")
+        std_out(f"Waiting for lock...")
+
+        await self.lock.acquire()
+
+        if self.dry_run:
+            std_out(f"Sleeping 3s...")
+            await asyncio.sleep(3)
+        else:
+            response = await self.conn.datachannel.pub_sub.publish_request_new(
+                topic = command.topic, options = command.options)
+
+            std_out(f"Command Response: {response}")
+
+        self.lock.release()
+        std_out(f"Done!")
+
+    def send_command(self, command):
+        std_out(f"Command topic: {command.topic}")
+        std_out(f"Command options: {command.options}")
+        if not self.dry_run:
+            asyncio.gather(self.conn.datachannel.pub_sub.publish_request_new(
+                command.topic, command.options))
+
     async def command_handler(self, address, *args):
+
         payload = json.loads(args[0])
         std_out(f"{address}: {args}")
         std_out(f"Command Payload: {payload}")
@@ -112,5 +141,10 @@ class Dog:
         self.state['LF_SPORT_MOD_STATE'] = current_message
         asyncio.gather(tcp_state_client(self.state))
 
-    def announce(self, dest):
+    # TODO Make this announce robot status to listeners
+    def announce_state(self, dest):
+        print ('Announce dog')
+
+    # TODO Make this announce robot commands to listeners
+    def announce_commands(self, dest):
         print ('Announce dog')
