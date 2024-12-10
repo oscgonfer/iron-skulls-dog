@@ -20,44 +20,7 @@ async def tcp_state_client(message):
     writer.close()
     await writer.wait_closed()
 
-# TODO UPDATE TO FULL STATE
 def display_data(message):
-    # LOWSTATE
-    # imu_state = message['imu_state']['rpy']
-    # motor_state = message['motor_state']
-    # bms_state = message['bms_state']
-    # foot_force = message['foot_force']
-    # temperature_ntc1 = message['temperature_ntc1']
-    # power_v = message['power_v']
-
-    # SPORTSMODE
-    # imu_state = message['imu_state']
-    # quaternion = imu_state['quaternion']
-    # gyroscope = imu_state['gyroscope']
-    # accelerometer = imu_state['accelerometer']
-    # rpy = imu_state['rpy']
-    # temperature = imu_state['temperature']
-    # mode = message['mode']
-    # progress = message['progress']
-    # gait_type = message['gait_type']
-    # foot_raise_height = message['foot_raise_height']
-    # position = message['position']
-    # body_height = message['body_height']
-    # velocity = message['velocity']
-    # yaw_speed = message['yaw_speed']
-    # range_obstacle = message['range_obstacle']
-    # foot_force = message['foot_force']
-    # foot_position_body = message['foot_position_body']
-    # foot_speed_body = message['foot_speed_body']
-
-    # MULTIPLESTATE
-    # body_height = message['bodyHeight']
-    # brightness = message['brightness']
-    # foot_raise_height = message['footRaiseHeight']
-    # obstacles_avoid_switch = message['obstaclesAvoidSwitch']
-    # speed_level = message['speedLevel']
-    # uwb_switch = message['uwbSwitch']
-    # volume = message['volume']
 
     # Extracting data from the message
     lowstate=message['LOW_STATE']
@@ -90,7 +53,6 @@ def display_data(message):
     foot_speed_body = sportstate['foot_speed_body']
 
     # body_height = multiplestate['bodyHeight']
-    print (message)
     brightness = multiplestate['brightness']
     # foot_raise_height = multiplestate['footRaiseHeight']
     obstacles_avoid_switch = multiplestate['obstaclesAvoidSwitch']
@@ -140,8 +102,9 @@ def display_data(message):
 
     # Foot Force
     print(f"\nFoot Force: {foot_force}")
-    print(f"Foot Position (Body): {foot_position_body}")
-    print(f"Foot Speed (Body): {foot_speed_body}")
+    # Too much info
+    # print(f"Foot Position (Body): {foot_position_body}")
+    # print(f"Foot Speed (Body): {foot_speed_body}")
 
     print(f"Brightness:            {brightness}")
     print(f"Obstacles Avoid Switch: {'Enabled' if obstacles_avoid_switch else 'Disabled'}")
