@@ -1,6 +1,5 @@
 from config import *
 from tools import *
-
 import pygame
 
 class JoystickItem:
@@ -36,7 +35,19 @@ class Button(JoystickItem):
 class Hat(JoystickItem):
     def __init__(self, name):
         super().__init__(name)
-        self.position = (0, 0)
+        self.items = [Button('up'), Button('down'), Button('left'), Button('right') ]
+
+    @property
+    def pressed(self):
+        return [item.pressed for item in self.items]
+
+    @property
+    def rising_edge(self):
+        return [item.rising_edge for item in self.items]
+
+    @property
+    def falling_edge(self):
+        return [item.falling_edge for item in self.items]
 
 class Axis(JoystickItem):
     def __init__(self, name):
@@ -93,6 +104,22 @@ class JoystickState:
             for hat in self.hats.keys():
                 self.hats[hat].position = self.joystick.get_hat(hat)
 
+                if self.hats[hat].position[0] == 1:
+                    self.hats[hat].items[0].press()
+                elif self.hats[hat].position[0] == -1:
+                    self.hats[hat].items[1].press()
+                elif self.hats[hat].position[0] == 0:
+                    self.hats[hat].items[0].release()
+                    self.hats[hat].items[1].release()
+
+                if self.hats[hat].position[1] == 1:
+                    self.hats[hat].items[2].press()
+                elif self.hats[hat].position[1] == -1:
+                    self.hats[hat].items[3].press()
+                elif self.hats[hat].position[1] == 0:
+                    self.hats[hat].items[2].release()
+                    self.hats[hat].items[3].release()
+
         return self.status()
 
     def status(self):
@@ -106,7 +133,7 @@ class JoystickState:
             d[button.name] = button.rising_edge
 
         for hat in self.hats.values():
-            d[hat.name] = hat.position
+            d[hat.name] = hat.rising_edge
 
         return d
 
