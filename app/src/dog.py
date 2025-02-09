@@ -8,7 +8,7 @@ from go2_webrtc_driver.constants import *
 
 # TODO Make this stateful
 class Dog:
-    def __init__(self, conn=None, dry_run = DRY_RUN):
+    def __init__(self, conn=None, dry_run = True):
         # State
         self.state = {
             'LOW_STATE': None,
@@ -57,7 +57,7 @@ class Dog:
 
         await self.lock.acquire()
 
-        if DRY_RUN:
+        if self.dry_run:
             std_out(f"Sleeping 3s...")
             await asyncio.sleep(3)
             std_out(f"Done!")

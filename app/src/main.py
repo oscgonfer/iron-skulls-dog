@@ -4,6 +4,7 @@ load_dotenv()
 import json
 import asyncio
 import os
+import argparse
 
 # Config
 from config import *
@@ -21,13 +22,21 @@ from pythonosc.dispatcher import Dispatcher
 from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection, WebRTCConnectionMethod
 from go2_webrtc_driver.constants import *
 
+
 async def main():
     server = AsyncOSCTCPServer(SERVER_IP, SERVER_PORT, dispatcher)
     await server.start()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
 
-    if not DRY_RUN:
+    parser.add_argument(
+        "--dry-run", default=False, dest='dry_run', action='store_true', help="Dry run mode"
+    )
+
+    args = parser.parse_args()
+
+    if not args.dry_run:
         conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA,
             ip=os.getenv("GO2_IP"))
         # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalAP)
@@ -35,7 +44,7 @@ if __name__ == "__main__":
         std_out("Running dry..")
         conn = None
 
-    dog = Dog(conn)
+    dog = Dog(conn, dry_run=args.dry_run)
     osc_handler = OscHandler(dog)
     std_out ("Starting handlers...")
     dispatcher = Dispatcher()
@@ -53,7 +62,7 @@ if __name__ == "__main__":
     asyncio.set_event_loop(loop)
 
     std_out ("Looping forever..")
-    if not DRY_RUN:
+    if not args.dry_run:
         loop.run_until_complete(dog.connect())
         loop.run_until_complete(dog.set_motion_switcher_status(desired_mode = 'normal'))
 

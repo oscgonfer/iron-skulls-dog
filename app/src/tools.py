@@ -7,9 +7,9 @@ import json
 def std_out(msg, priority=False):
     if DEBUG or priority:
         if TIMESTAMP:
-            print (f"{datetime.datetime.now()}: {msg}")
+            sys.stdout.write(f"{datetime.datetime.now()}: {msg}\n")
         else:
-            print (msg)
+            sys.stdout.write(msg)
 
 async def tcp_state_client(message):
     reader, writer = await asyncio.open_connection(
