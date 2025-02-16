@@ -1,5 +1,6 @@
 #!/bin/bash
 HASH=$(cat .pass | md5sum | cut -d ' ' -f 1)
+SN=$(cat .sn)
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -17,4 +18,5 @@ go2IP=$(getent ahostsv4 Unitree.local | awk '{print $1}' | sort | uniq)
 
 echo -n "GO2_TOKEN=$accessToken" > app/src/.env
 echo -e "\nGO2_IP=$go2IP" >> app/src/.env
+echo -e "\nGO2_SN=$SN" >> app/src/.env
 export GO2_TOKEN=$accessToken
