@@ -37,8 +37,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.dry_run:
-        conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA,
-            ip=os.getenv("GO2_IP"))
+        conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA, ip=os.getenv("GO2_IP"))
+        # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA, serialNumber =os.getenv("GO2_SN"))
         # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalAP)
     else:
         std_out("Running dry..")
@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     dog = Dog(conn, dry_run=args.dry_run)
     osc_handler = OscHandler(dog)
+
     std_out ("Starting handlers...")
     dispatcher = Dispatcher()
     # dispatcher.map(SPECIAL_CMD_FILTER, dog.command_handler)

@@ -1,19 +1,18 @@
 import sys
 import asyncio
 from config import *
-from tools import display_data
+from tools import display_data, std_out
 import json
 import asyncio
 
 async def handle_echo(reader, writer):
     data = await reader.read(10000) # READ as much as we can
     message = json.loads(data.decode())
-    # if DEGUG:
-    #     print (message)
+    std_out (message)
     addr = writer.get_extra_info('peername')
 
-    # if DEBUG:
-    #     print(f"Received {message!r} from {addr!r}")
+    std_out (f"Received {message!r} from {addr!r}")
+
     try:
         display_data(message)
     except KeyError:
@@ -26,7 +25,8 @@ async def main():
         handle_echo, LOGGER_IP, LOGGER_PORT)
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
-    print(f'Serving on {addrs}')
+
+    std_out(f'Serving on {addrs}', True)
 
     async with server:
         await server.serve_forever()

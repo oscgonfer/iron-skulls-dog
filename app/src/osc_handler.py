@@ -82,6 +82,7 @@ class OscHandler:
         self.capture.store()
 
     async def handle_special_command(self, address, *args):
+        # Special = Async
         payload = json.loads(args[0])
         std_out(f"{address}: {args}")
         std_out(f"Command Payload: {payload}")
@@ -93,6 +94,7 @@ class OscHandler:
         await self.dog.send_async_command(command)
 
     def handle_movement_command(self, address, *args):
+        # Movement = direct
         payload = json.loads(args[0])
 
         std_out(f"{address}: {args}")

@@ -120,15 +120,13 @@ async def start_joy_bridge(client = None, joystick=None):
     while True:
         joystick_values = await joystick_state.get_item_values()
 
-        if DEBUG:
-            std_out (f"Joystick values: {joystick_values}")
+        std_out (f"Joystick values: {joystick_values}")
 
         cmd = None
 
         # We are moving the axes
         if any([joystick_values[item] for item in joystick_values if 'Axis' in item]):
-            if DEBUG:
-                std_out ('Movement with axis!')
+            std_out ('Movement with axis!')
 
             if robot_stat == "BalanceStand":
                 cmd = MovementCommand(gen_movement_payload(
@@ -144,8 +142,7 @@ async def start_joy_bridge(client = None, joystick=None):
                 ))
 
             if cmd is not None:
-                if DEBUG:
-                    std_out (f'Robot command: {cmd.as_dict()}')
+                std_out (f'Robot command: {cmd.as_dict()}')
                 handle_client_msg(client, MOVE_TOPIC, cmd.to_json())
 
         # We are moving the hat

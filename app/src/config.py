@@ -1,6 +1,5 @@
 # Config
 DEBUG=True
-DRY_RUN=True
 TIMESTAMP=True
 TCP_LOG=True
 CAPTURE_PATH = 'capture'
