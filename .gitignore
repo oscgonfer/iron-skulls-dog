@@ -6,3 +6,5 @@ __pycache__
 .qtcreator/
 
 **/venv/
+
+.sn
