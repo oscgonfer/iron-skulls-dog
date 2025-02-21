@@ -81,31 +81,35 @@ class OscHandler:
     def store_capture(self):
         self.capture.store()
 
-    async def handle_special_command(self, address, *args):
-        # Special = Async
+    async def handle_sport_command(self, address, *args):
+        # Sport = Async
         payload = json.loads(args[0])
         std_out(f"{address}: {args}")
         std_out(f"Command Payload: {payload}")
         std_out(f"Waiting for lock...")
 
-        command = SpecialCommand(payload)
-        if self.capture is not None: self.capture.add(command, SPECIAL_TOPIC)
+        command = Command(payload)
+
+        if self.capture is not None:
+            self.capture.add(command, SPORT_TOPIC)
 
         await self.dog.send_async_command(command)
 
     def handle_movement_command(self, address, *args):
-        # Movement = direct
+        # Movement = direct displacement on the space
         payload = json.loads(args[0])
 
         std_out(f"{address}: {args}")
         std_out(f"Movement Payload: {payload}")
 
-        command = MovementCommand(payload)
-        if self.capture is not None: self.capture.add(command, MOVE_TOPIC)
+        command = Command(payload)
+
+        if self.capture is not None:
+            self.capture.add(command, MOVE_TOPIC)
 
         self.dog.send_command(command)
 
-    def handler_capture_command(self, address, *args):
+    def handle_capture_command(self, address, *args):
         payload = json.loads(args[0])
 
         std_out(f"{address}: {args}")

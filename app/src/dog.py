@@ -1,4 +1,5 @@
 import asyncio
+import websockets
 import json
 
 # Config
@@ -24,6 +25,7 @@ class Dog:
         return await self.conn.connect()
 
     async def send_async_command(self, command):
+        # Reply command, to acquire lock
         std_out(f"Command topic: {command.topic}")
         std_out(f"Command options: {command.options}")
         std_out(f"Waiting for lock...")
@@ -38,62 +40,28 @@ class Dog:
                 topic = command.topic, options = command.options)
 
             std_out(f"Command Response: {response}")
+            if command.expect_reply:
+                print ("Command reply")
+                print (response)
+                # TODO put this somewhere to log the response
 
         self.lock.release()
         std_out(f"Done!")
 
     def send_command(self, command):
+        # No reply command
         std_out(f"Command topic: {command.topic}")
         std_out(f"Command options: {command.options}")
+
         if not self.dry_run:
             asyncio.gather(self.conn.datachannel.pub_sub.publish_request_new(
                 command.topic, command.options))
 
-    async def command_handler(self, address, *args):
-
-        payload = json.loads(args[0])
-        std_out(f"{address}: {args}")
-        std_out(f"Command Payload: {payload}")
-        std_out(f"Waiting for lock...")
-
-        await self.lock.acquire()
-
-        if self.dry_run:
-            std_out(f"Sleeping 3s...")
-            await asyncio.sleep(3)
-            std_out(f"Done!")
-        else:
-            response = await self.conn.datachannel.pub_sub.publish_request_new(
-                payload["topic"],
-                {
-                    "api_id": payload["api_id"],
-                    "parameter": payload["parameter"]
-                }
-            )
-
-            std_out(f"Command Response: {response}")
-
-        self.lock.release()
-
-    def movement_handler(self, address, *args):
-        payload = json.loads(args[0])
-
-        std_out(f"{address}: {args}")
-        std_out(f"Movement Payload: {payload}")
-        if not DRY_RUN:
-            asyncio.gather(self.conn.datachannel.pub_sub.publish_request_new(
-                payload["topic"],
-                {
-                    "api_id": payload["api_id"],
-                    "parameter": payload["parameter"]
-                }
-            ))
-
     # TODO Add MediaStreamTrack
-    def audio_handler(self, address, *args):
-        std_out(f"{address}: {args}")
-        argsd = json.loads(args[0])
-        std_out (argsd)
+    # def audio_handler(self, address, *args):
+    #     std_out(f"{address}: {args}")
+    #     argsd = json.loads(args[0])
+    #     std_out (argsd)
 
     async def get_motion_switcher_status(self):
         # Get the current motion_switcher status
