@@ -1,7 +1,8 @@
+from command import *
+
 # Config
-DEBUG=True
+DEBUG=False
 TIMESTAMP=True
-TCP_LOG=True
 CAPTURE_PATH = 'capture'
 
 # OSC Server IP and port
@@ -9,15 +10,15 @@ SERVER_IP = "127.0.0.1"
 SERVER_PORT = 9996
 OSSIA_PORT = 9997
 
-# TCP Logger
-LOGGER_IP = "127.0.0.1"
-LOGGER_PORT = 7005
+# WS Server
+WS_IP = "127.0.0.1"
+WS_PORT = 7005
 
 # TCP Message filter
 PRE_FILTER = "/dog"
 
-SPECIAL_FILTER = f"{PRE_FILTER}/special*"
-SPECIAL_TOPIC = SPECIAL_FILTER.replace("*","")
+SPORT_FILTER = f"{PRE_FILTER}/sport*"
+SPORT_TOPIC = SPORT_FILTER.replace("*","")
 
 MOVE_FILTER = f"{PRE_FILTER}/move*"
 MOVE_TOPIC = MOVE_FILTER.replace("*","")
@@ -115,21 +116,21 @@ DEF_JOY = {
 
 # Commands
 BUTTON_CMD = {
-    "A": "StandDown",
-    "B": "StandUp",
-    "S": "Release",
-    "X": "Sit",
-    "Y": "Hello",
+    "A": StandDown,
+    "B": StandUp,
+    "S": None,
+    "X": Sit,
+    "Y": Hello,
     "L1": None,
     "R1": None,
     "L2": None,
     "R2": None,
-    "SELECT": "RecoveryStand",
+    "SELECT": RecoveryStand,
     "START": None,
-    "LBALL": "BalanceStand",
-    "RBALL": "Pose"
+    "LBALL": BalanceStand,
+    "RBALL": Pose
 }
 
 SAFETY_CMD = [
-    "Release"
+
 ]

@@ -22,17 +22,21 @@ async def tcp_state_client(message):
 
 def display_data(message):
 
-    # Extracting data from the message
+    # -------------------------------------------------
+    # LOW_STATE
     lowstate=message['LOW_STATE']
-    multiplestate=message['MULTIPLE_STATE']
-    sportstate=message['LF_SPORT_MOD_STATE']
-
     motor_state = lowstate['motor_state']
     bms_state = lowstate['bms_state']
     foot_force = lowstate['foot_force']
     temperature_ntc1 = lowstate['temperature_ntc1']
     power_v = lowstate['power_v']
+    # -------------------------------------------------
 
+    # -------------------------------------------------
+    # SPORT_STATE
+    sportstate=message['LF_SPORT_MOD_STATE']
+
+    # SPORT_STATE>IMU_STATE
     imu_state = sportstate['imu_state']
     quaternion = imu_state['quaternion']
     gyroscope = imu_state['gyroscope']
@@ -51,7 +55,11 @@ def display_data(message):
     foot_force = sportstate['foot_force']
     foot_position_body = sportstate['foot_position_body']
     foot_speed_body = sportstate['foot_speed_body']
+    # -------------------------------------------------
 
+    # -------------------------------------------------
+    # MULTIPLE_STATE
+    multiplestate=message['MULTIPLE_STATE']
     # body_height = multiplestate['bodyHeight']
     brightness = multiplestate['brightness']
     # foot_raise_height = multiplestate['footRaiseHeight']
@@ -59,6 +67,7 @@ def display_data(message):
     speed_level = multiplestate['speedLevel']
     uwb_switch = multiplestate['uwbSwitch']
     volume = multiplestate['volume']
+    # -------------------------------------------------
 
     # Clear the entire screen and reset cursor position to top
     sys.stdout.write("\033[H\033[J")
