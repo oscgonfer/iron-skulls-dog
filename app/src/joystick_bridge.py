@@ -23,6 +23,7 @@
 
 from config import *
 from command import *
+from tools import std_out
 import asyncio
 import json
 import os
@@ -32,77 +33,11 @@ load_dotenv()
 
 from pythonosc import tcp_client
 from go2_webrtc_driver.constants import *
-from tools import *
 
 from joystick_handler import JoystickState
+import websockets
 
-def gen_command_payload(command_name):
-
-    payload = {
-        "topic": RTC_TOPIC["SPORT_MOD"],
-        "options": {
-            "parameter": "",
-            "api_id": SPORT_CMD[command_name]
-        }
-    }
-
-    return payload
-
-def gen_movement_payload(x: float, y: float, z: float):
-    x = round(x * JOY_SENSE["speed"], 2)
-    y = round(y * JOY_SENSE["speed"], 2)
-
-    payload = {
-        "topic": RTC_TOPIC["SPORT_MOD"],
-        "options": {
-            "parameter": json.dumps({"x": x, "y": y, "z": z}),
-            "api_id": SPORT_CMD["Move"]
-        }
-    }
-
-    return payload
-
-def gen_euler_payload(roll: float, pitch: float, yaw: float):
-    _roll = round(roll * JOY_SENSE["roll"], 2)
-    _pitch = round(pitch * JOY_SENSE["pitch"], 2)
-    _yaw = round(yaw * JOY_SENSE["yaw"], 2)
-
-    payload = {
-        "topic": RTC_TOPIC["SPORT_MOD"],
-        "options": {
-            "parameter": json.dumps({"x": _roll, "y": _pitch, "z": _yaw}),
-            "api_id": SPORT_CMD["Euler"]
-        }
-    }
-
-    return payload
-
-def handle_hat(joystick_values):
-    # Handles the hat // Changes joystick sensitivity
-    if joystick_values[0]:
-        JOY_SENSE["speed"] = min(VAL_LIMITS["speed"][1], JOY_SENSE["speed"] + 0.1)
-    elif joystick_values[1]:
-        JOY_SENSE["speed"] = max(VAL_LIMITS["speed"][0], JOY_SENSE["speed"] - 0.1)
-
-    if joystick_values[2]:
-        JOY_SENSE["roll"] = min(VAL_LIMITS["roll"][1], JOY_SENSE["roll"] + 0.1)
-        JOY_SENSE["pitch"] = min(VAL_LIMITS["pitch"][1], JOY_SENSE["pitch"] + 0.1)
-        JOY_SENSE["yaw"] = min(VAL_LIMITS["yaw"][1], JOY_SENSE["yaw"] + 0.1)
-    elif joystick_values[3]:
-        JOY_SENSE["roll"] = max(VAL_LIMITS["roll"][0], JOY_SENSE["roll"] - 0.1)
-        JOY_SENSE["pitch"] = max(VAL_LIMITS["pitch"][0], JOY_SENSE["pitch"] - 0.1)
-        JOY_SENSE["yaw"] = max(VAL_LIMITS["yaw"][0], JOY_SENSE["yaw"] - 0.1)
-
-    std_out(f'New joysense speed: {JOY_SENSE}')
-
-def gen_safe_command(command):
-    payload = {
-        "command": command
-    }
-
-    return payload
-
-def handle_client_msg(client, topic, msg):
+def send_msg_no_reply(client, topic, msg):
     if client is not None:
         try:
             client.send_message(topic, msg)
@@ -110,81 +45,108 @@ def handle_client_msg(client, topic, msg):
             client.close()
             raise SystemExit("Broken pipe. Disconnected")
 
-async def start_joy_bridge(client = None, joystick=None):
+async def ws_bridge(incoming_url, queue):
+    async with websockets.connect(incoming_url) as ws:
+        while True:
+            try:
+                data = await ws.recv()
+                # TODO Add filter for response
+                # Load json, and get data first,
+                # before putting it on the queue
+                await queue.put(('ws', data))
+            except websockets.exceptions.ConnectionClosed:
+                # TODO Handle a retry?
+                pass
+
+async def joystick_bridge(client=None, joystick=None, queue=None):
 
     joystick_state = JoystickState(joystick)
 
-    # TODO Make this listen to topics
-    robot_stat = "BalanceStand"
-
     while True:
         joystick_values = await joystick_state.get_item_values()
-
         std_out (f"Joystick values: {joystick_values}")
-
         cmd = None
+        robot_state = 'BalanceStand'
+
+        try:
+            source, data = queue.get_nowait()
+        except asyncio.QueueEmpty:
+            pass
+        else:
+            if source == 'ws':
+                print(f'WS Incomming: {data}')
 
         # We are moving the axes
         if any([joystick_values[item] for item in joystick_values if 'Axis' in item]):
             std_out ('Movement with axis!')
 
-            if robot_stat == "BalanceStand":
-                cmd = MovementCommand(gen_movement_payload(
-                    x = joystick_values["Axis 1"],
-                    y = joystick_values["Axis 0"],
-                    z = joystick_values["Axis 2"]
-                ))
-            elif robot_stat == 'Pose':
-                cmd = MovementCommand(gen_euler_payload(
-                    roll = joystick_values["Axis 0"],
-                    pitch = joystick_values["Axis 1"],
-                    yaw = joystick_values["Axis 2"]
-                ))
+            # TODO Bring state from dog.py
+            if robot_state == "BalanceStand":
+                cmd = Move(
+                    x = round(joystick_values["Axis 1"] * JOY_SENSE["speed"], 2),
+                    y = round(joystick_values["Axis 0"] * JOY_SENSE["speed"], 2),
+                    z = round(joystick_values["Axis 2"] * JOY_SENSE["speed"], 2)
+                )
+            elif robot_state == 'Pose':
+                cmd = Euler(
+                    roll = round(joystick_values["Axis 0"] * JOY_SENSE["roll"], 2),
+                    pitch = round(joystick_values["Axis 1"] * JOY_SENSE["pitch"], 2),
+                    yaw = round(joystick_values["Axis 2"] * JOY_SENSE["yaw"], 2)
+                )
 
             if cmd is not None:
                 std_out (f'Robot command: {cmd.as_dict()}')
-                handle_client_msg(client, MOVE_TOPIC, cmd.to_json())
-
-        # We are moving the hat
-        if any([joystick_values[item] for item in joystick_values if 'Hat' in item]):
-
-            for item in joystick_values:
-                if 'Hat' not in item: continue
-                if any(joystick_values[item]):
-                    handle_hat(joystick_values[item])
+                send_msg_no_reply(client, MOVE_TOPIC, cmd.to_json())
 
         # We are pressing a button
         if any([joystick_values[item] for item in joystick_values if ('Axis' not in item and 'Hat' not in item)]):
             std_out ('A button was pressed!')
 
             for item in joystick_values:
-                if 'Axis' in item or 'Hat' in item: continue
+                if 'Axis' in item or 'Hat' in item:
+                    continue
+
+                cmd_class = BUTTON_CMD[item]
 
                 if joystick_values[item]:
-                    if BUTTON_CMD[item] is not None:
+                    if cmd_class is not None:
+                        # if cmd_class in SAFETY_CMD:
 
-                        if BUTTON_CMD[item] in SAFETY_CMD:
-                            cmd = SpecialCommand(gen_safe_command(BUTTON_CMD[item]))
-                            std_out (f'Robot command {cmd.as_dict()}')
-                            handle_client_msg(client, SAFE_TOPIC, cmd.to_json())
-                        else:
-                            cmd = SpecialCommand(gen_command_payload(BUTTON_CMD[item]))
-                            std_out (f'Robot command {cmd.as_dict()}')
+                        #     cmd = SportCommand(gen_safe_command(BUTTON_CMD[item]))
+                        #     std_out (f'Robot command {cmd.as_dict()}')
+                        #     send_msg_no_reply(client, SAFE_TOPIC, cmd.to_json())
 
-                            robot_stat = BUTTON_CMD[item]
-                            std_out (f'Robot status {robot_stat}')
+                        # else:
 
-                            if cmd is not None:
-                                handle_client_msg(client, SPECIAL_TOPIC, cmd.to_json())
+                        # TODO Could the joystick have associated parameter?
+                        cmd = cmd_class()
+                        std_out (f'Robot command {cmd.as_dict()}')
+
+                        # robot_state = BUTTON_CMD[item]
+                        # std_out (f'Robot status {robot_state}')
+
+                        if cmd is not None:
+                            send_msg_no_reply(client, SPORT_TOPIC, cmd.to_json())
 
         await asyncio.sleep(0.001)
 
+async def start_bridge(client = None, joystick = None):
+    queue = asyncio.Queue()
+
+    ws_task = asyncio.create_task(ws_bridge(incoming_url = f'ws://{WS_IP}:{WS_PORT}/sub', queue=queue))
+    joy_task = asyncio.create_task(joystick_bridge(client = client, joystick=joystick, queue=queue))
+
+    await asyncio.gather(*[ws_task, joy_task])
+
 async def main():
-    coroutine = await start_joy_bridge(
+
+    std_out('Starting joystick coroutine...')
+    coroutine = await start_bridge(
         client = client,
         joystick = joystick)
 
     loop = asyncio.get_event_loop()
+    std_out('Joystick coroutine started')
 
     try:
         loop.run_until_complete(coroutine)
@@ -208,5 +170,6 @@ if __name__ == '__main__':
     std_out('Starting TCP client...')
     client = None
     client = tcp_client.SimpleTCPClient(SERVER_IP, SERVER_PORT)
+    std_out('TCP client started')
 
     asyncio.run(main())

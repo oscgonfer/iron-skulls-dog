@@ -8,7 +8,7 @@ from go2_webrtc_driver.constants import *
 
 # TODO Make this stateful
 class Dog:
-    def __init__(self, conn=None, dry_run = True):
+    def __init__(self, conn=None, dry_run = False, broadcast_state = False):
         # State
         self.state = {
             'LOW_STATE': None,
@@ -18,6 +18,7 @@ class Dog:
         self.conn = conn
         self.lock = asyncio.Lock()
         self.dry_run = dry_run
+        self.broadcast_state = broadcast_state
 
     async def connect(self):
         return await self.conn.connect()
@@ -125,26 +126,24 @@ class Dog:
 
         return current_motion_switcher_mode
 
-    def lowstate_callback(self, message):
+    async def publish_state(self, channel):
+        if self.broadcast_state:
+            async with websockets.connect(f'ws://{WS_IP}:{WS_PORT}/pub') as websocket:
+                await websocket.send(json.dumps(self.state))
+
+    async def lowstate_callback(self, message):
         current_message = message['data']
         self.state['LOW_STATE'] = current_message
-        asyncio.gather(tcp_state_client(self.state))
+        await self.publish_state('LOW_STATE')
 
-    def multiplestate_callback(self, message):
+    async def multiplestate_callback(self, message):
         # TODO For whatever reason this needs to be parsed into json
         current_message = json.loads(message['data'])
         self.state['MULTIPLE_STATE'] = current_message
-        asyncio.gather(tcp_state_client(self.state))
+        await self.publish_state('MULTIPLE_STATE')
 
-    def sportstate_callback(self, message):
+    async def sportstate_callback(self, message):
         current_message = message['data']
         self.state['LF_SPORT_MOD_STATE'] = current_message
-        asyncio.gather(tcp_state_client(self.state))
+        await self.publish_state('LF_SPORT_MOD_STATE')
 
-    # TODO Make this announce robot status to listeners
-    def announce_state(self, dest):
-        print ('Announce dog')
-
-    # TODO Make this announce robot commands to listeners
-    def announce_commands(self, dest):
-        print ('Announce dog')
