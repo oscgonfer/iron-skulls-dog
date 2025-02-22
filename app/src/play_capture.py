@@ -37,5 +37,6 @@ if __name__ == "__main__":
         while not datetime.datetime.now()-start_time > timestamp:
             time.sleep(0.001)
 
+# TODO Move to aiomqtt
         client = tcp_client.SimpleTCPClient(args.ip, args.port)
         client.send_message(topic, command.to_json())
