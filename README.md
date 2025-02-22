@@ -4,21 +4,49 @@ Development files for a robot dog controller via TCP server that listens to comm
 
 ## Installation
 
-``` 
-git clone git@github.com:legion1581/go2_webrtc_connect.git
+```
+sudo apt install portaudio19-dev x86_64-linux-gnu-gcc build-essential libssl-dev libffi-dev python3-dev mosquitto
 ```
 
 ```
-sudo apt-get install portaudio19-dev
-sudo apt search x86_64-linux-gnu-gcc
-sudo apt-get install build-essential libssl-dev libffi-dev python3-dev
-```
-
-```
-cd ..
-git clone git@github.com:legion1581/go2_webrtc_connect.git
+git clone git@github.com:oscgonfer/iron-skulls-dog.git
+git clone --recurse-submodules git@github.com:legion1581/go2_webrtc_connect.git
 cd go2_webrtc_connect
 pip install -e .
 cd ../iron-skulls-dog
 pip install -r requirements.txt
+```
+
+## Running
+
+Check in config.py the necessary parameters (`DEBUG` and the different ports, server IPs).
+
+Create:
+- `.pass`: Unitree account password
+- `.sn`: Unitree GO2 Serial Number
+
+Turn on the dog and configure the mode. Choose this mode in `main.py`.
+
+Run `get-token.sh` with your email as a parameter to get the connection token and dog IP in the local network:
+
+```
+./get-token.sh -e email@email.com
+```
+
+Run mosquitto
+
+```
+mosquitto
+```
+
+Run main.py
+
+```
+python main.py --broadcast-state
+```
+
+Run clients, for instance, joystick:
+
+```
+python joystick_bridge.py
 ```
