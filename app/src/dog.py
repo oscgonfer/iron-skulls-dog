@@ -19,17 +19,18 @@ class DogMode(IntEnum):
 
 # TODO Make this stateful
 class Dog:
-    def __init__(self, conn=None, dry_run = False, broadcast_state = False, mqtt_handler = None):
+    def __init__(self, conn=None, dry_run=False, broadcast=False, mqtt_handler=None):
         # State
         self.state = {
             'LOW_STATE': None,
             'LF_SPORT_MOD_STATE': None,
             'MULTIPLE_STATE': None
         }
+        self._mode = None
         self.conn = conn
         self.lock = asyncio.Lock()
         self.dry_run = dry_run
-        self.broadcast_state = broadcast_state
+        self.broadcast = broadcast
         self.mqtt_handler = mqtt_handler
 
     async def connect(self):
@@ -74,39 +75,14 @@ class Dog:
     #     argsd = json.loads(args[0])
     #     std_out (argsd)
 
-    async def get_motion_switcher_status(self):
-        # Get the current motion_switcher status
-        response = await self.conn.datachannel.pub_sub.publish_request_new(
-            RTC_TOPIC["MOTION_SWITCHER"],
-            {"api_id": 1001}
-        )
-
-        if response['data']['header']['status']['code'] == 0:
-            data = json.loads(response['data']['data'])
-            current_motion_switcher_mode = data['name']
-            std_out(f"Current motion mode: {current_motion_switcher_mode}")
-
-        return current_motion_switcher_mode
-
-    async def set_motion_switcher_status(self, desired_mode = None):
-
-        current_motion_switcher_mode = await self.get_motion_switcher_status()
-
-        if desired_mode is not None:
-            if current_motion_switcher_mode != desired_mode:
-                std_out(f"Switching motion mode from {current_motion_switcher_mode} to {desired_mode}...")
-                await self.conn.datachannel.pub_sub.publish_request_new(
-                    RTC_TOPIC["MOTION_SWITCHER"],
-                    {
-                        "parameter": {"name": desired_mode}
-                    }
-                )
-                await asyncio.sleep(5)  # Wait while it stands up
-
-        return current_motion_switcher_mode
+    async def publish_response(self, channel, response):
+        print (f'{RESPONSE_TOPIC}/{channel}')
+        if self.broadcast:
+            await self.mqtt_handler.publish(topic=f'{RESPONSE_TOPIC}/{channel}', \
+                payload=json.dumps(response))
 
     async def publish_state(self, channel):
-        if self.broadcast_state:
+        if self.broadcast:
             await self.mqtt_handler.publish(topic=f'{STATE_TOPIC}/{channel}', \
                 payload=json.dumps(self.state))
 
@@ -123,6 +99,17 @@ class Dog:
 
     def sportstate_callback(self, message):
         current_message = message['data']
+        # Update state
         self.state['LF_SPORT_MOD_STATE'] = current_message
+        # Update mode
+        self._mode = self.state['LF_SPORT_MOD_STATE']['mode']
         asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @property
+    def motion_switcher(self):
+        return self._motion_switcher
 

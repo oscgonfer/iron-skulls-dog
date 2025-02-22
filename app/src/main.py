@@ -13,22 +13,23 @@ from config import *
 from tools import *
 from dog import Dog
 from command_handler import CommandHandler
+from command import *
 from mqtt_handler import MQTTHandler
 
 # GO2 WEBRTC DRIVER
 from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection, WebRTCConnectionMethod
 from go2_webrtc_driver.constants import *
 
-# async def start_bridge(mqtt_handler, command_handler):
-
 async def main():
 
     queue = asyncio.Queue()
     std_out('Creating tasks...')
+
     async with asyncio.TaskGroup() as tg:
         tg.create_task(mqtt_handler.bridge_incomming(topic=SPORT_TOPIC, queue=queue))
         tg.create_task(mqtt_handler.bridge_incomming(topic=MOVE_TOPIC, queue=queue))
         tg.create_task(mqtt_handler.bridge_incomming(topic=CAPTURE_TOPIC, queue=queue))
+        tg.create_task(mqtt_handler.bridge_incomming(topic=SWITCHER_TOPIC, queue=queue))
 
         tg.create_task(command_handler.dispatch_commands(queue=queue))
         std_out ("Looping forever...")
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--broadcast-state", default=False, dest='broadcast_state', action='store_true'
+        "--broadcast", default=False, dest='broadcast', action='store_true'
     )
 
     args = parser.parse_args()
@@ -57,7 +58,7 @@ if __name__ == "__main__":
         conn = None
 
     mqtt_handler = MQTTHandler(broker=MQTT_BROKER)
-    dog = Dog(conn, dry_run=args.dry_run, broadcast_state=args.broadcast_state, mqtt_handler=mqtt_handler)
+    dog = Dog(conn, dry_run=args.dry_run, broadcast=args.broadcast, mqtt_handler=mqtt_handler)
 
     std_out ("Starting handlers...")
     command_handler = CommandHandler(dog)
@@ -68,7 +69,6 @@ if __name__ == "__main__":
 
     if not args.dry_run:
         loop.run_until_complete(dog.connect())
-        loop.run_until_complete(dog.set_motion_switcher_status(desired_mode = 'normal'))
 
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LOW_STATE'], \
             dog.lowstate_callback)
@@ -76,5 +76,8 @@ if __name__ == "__main__":
             dog.multiplestate_callback)
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LF_SPORT_MOD_STATE'], \
             dog.sportstate_callback)
-
-    loop.run_until_complete(main())
+    try:
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        std_out("Program interrupted by user")
+        sys.exit(0)

@@ -1,7 +1,7 @@
 from command import *
 
 # Config
-DEBUG=False
+DEBUG=True
 TIMESTAMP=True
 CAPTURE_PATH = 'capture'
 
@@ -17,28 +17,31 @@ MQTT_RECONNECT = 5
 # TCP Message filter
 PRE_FILTER = "/dog"
 
-SPORT_FILTER = f"{PRE_FILTER}/sport*"
-SPORT_TOPIC = SPORT_FILTER.replace("*","")
+SPORT_FILTER = f"{PRE_FILTER}/sport/#"
+SPORT_TOPIC = SPORT_FILTER.replace("/#","")
 
-MOVE_FILTER = f"{PRE_FILTER}/move*"
-MOVE_TOPIC = MOVE_FILTER.replace("*","")
+MOVE_FILTER = f"{PRE_FILTER}/move/#"
+MOVE_TOPIC = MOVE_FILTER.replace("/#","")
 
-SWITCHER_FILTER = f"{PRE_FILTER}/switch*"
-SWITCHER_TOPIC = SWITCHER_FILTER.replace("*","")
+SWITCHER_FILTER = f"{PRE_FILTER}/switch/#"
+SWITCHER_TOPIC = SWITCHER_FILTER.replace("/#","")
 
-VUI_FILTER = f"{PRE_FILTER}/vui*"
-VUI_TOPIC = VUI_FILTER.replace("*","")
+VUI_FILTER = f"{PRE_FILTER}/vui/#"
+VUI_TOPIC = VUI_FILTER.replace("/#","")
 
-AUDIO_FILTER = f"{PRE_FILTER}/audio*"
+# AUDIO_FILTER = f"{PRE_FILTER}/audio/#"
 
-SAFE_FILTER = f"{PRE_FILTER}/safety*"
-SAFE_TOPIC = SAFE_FILTER.replace("*","")
+# SAFE_FILTER = f"{PRE_FILTER}/safety/#"
+# SAFE_TOPIC = SAFE_FILTER.replace("/#","")
 
-CAPTURE_FILTER = f"{PRE_FILTER}/capture*"
-CAPTURE_TOPIC = CAPTURE_FILTER.replace("*","")
+CAPTURE_FILTER = f"{PRE_FILTER}/capture/#"
+CAPTURE_TOPIC = CAPTURE_FILTER.replace("/#","")
 
-STATE_FILTER = f"{PRE_FILTER}/state*"
-STATE_TOPIC = STATE_FILTER.replace("*","")
+STATE_FILTER = f"{PRE_FILTER}/state/#"
+STATE_TOPIC = STATE_FILTER.replace("/#","")
+
+RESPONSE_FILTER = f"{PRE_FILTER}/response/#"
+RESPONSE_TOPIC = RESPONSE_FILTER.replace("/#","")
 
 VUI_CMD = {
     "Color": 1007,

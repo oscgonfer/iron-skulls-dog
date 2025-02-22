@@ -32,14 +32,16 @@ class CommandHandler:
             except json.decoder.JSONDecodeError:
                 pass
             finally:
-                if source == SPORT_TOPIC:
-                    await self.handle_sport_command(_payload)
+                if source == SPORT_TOPIC or source == SWITCHER_TOPIC:
+                    await self.handle_async_command(_payload)
                 elif source == MOVE_TOPIC:
-                    self.handle_movement_command(_payload)
+                    self.handle_command(_payload)
                 elif source == CAPTURE_TOPIC:
                     self.handle_capture_command(_payload)
+                else:
+                    std_out(f'Unknown source {source}')
 
-    async def handle_sport_command(self, payload):
+    async def handle_async_command(self, payload):
         # Sport = Async
         std_out(f"Command Payload: {payload}")
         command = Command(payload)
@@ -49,7 +51,7 @@ class CommandHandler:
 
         await self.dog.send_async_command(command)
 
-    def handle_movement_command(self, payload):
+    def handle_command(self, payload):
         # Movement = direct displacement on the space
         std_out(f"Movement Payload: {payload}")
         command = Command(payload)

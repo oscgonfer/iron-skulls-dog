@@ -127,7 +127,7 @@ async def start_bridge(mqtt_handler = None, joystick = None):
     joystick_handler = JoystickHandler(joystick)
 
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(mqtt_handler.bridge_incomming(topic=f'{STATE_TOPIC}/#', queue=queue))
+        tg.create_task(mqtt_handler.bridge_incomming(topic=STATE_FILTER, queue=queue))
         tg.create_task(joystick_bridge(joystick_handler=joystick_handler, queue=queue, mqtt_handler = mqtt_handler))
 
 async def main():
