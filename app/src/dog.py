@@ -2,9 +2,10 @@ import asyncio
 import websockets
 import json
 
-# Config
+from command import *
 from config import *
 from tools import *
+
 from go2_webrtc_driver.constants import *
 
 from enum import IntEnum
@@ -27,6 +28,7 @@ class Dog:
             'MULTIPLE_STATE': None
         }
         self._mode = None
+        self._motion_switcher = None
         self.conn = conn
         self.lock = asyncio.Lock()
         self.dry_run = dry_run
@@ -40,8 +42,12 @@ class Dog:
         # Reply command, to acquire lock
         std_out(f"Command topic: {command.topic}")
         std_out(f"Command options: {command.options}")
-        std_out(f"Waiting for lock...")
+        std_out(f"Command extras: {command.expect_reply, command.update_switcher_mode, command.additional_wait, command.post_hook}")
 
+        std_out(f"Waiting for lock...")
+        # TODO this sometimes gets locked??? Why?
+        # Check mode to avoid locking??
+        # Check state?
         await self.lock.acquire()
 
         if self.dry_run:
@@ -52,13 +58,29 @@ class Dog:
                 topic = command.topic, options = command.options)
 
             std_out(f"Command Response: {response}")
+
             if command.expect_reply:
-                print ("Command reply")
-                print (response)
-                # TODO put this somewhere to log the response
+                std_out('Command expects reply')
+                if response['data']['header']['status']['code'] == 0:
+                    data = json.loads(response['data']['data'])
+                    if command.update_switcher_mode:
+                        self._motion_switcher = data['name']
+                    await self.publish_response(command.topic, response=data)
+                else:
+                    data = json.dumps({"ERROR": response['data']})
+                    await self.publish_response(command.topic, response=data)
+
+        if command.additional_wait:
+            std_out('Waiting additional timer')
+            await asyncio.sleep(command.additional_wait)
 
         self.lock.release()
-        std_out(f"Done!")
+
+        if command.post_hook:
+            std_out('Sending command post_hook')
+            cmd = Command(command.post_hook)
+            await self.send_async_command(cmd)
+        std_out('Done')
 
     def send_command(self, command):
         # No reply command

@@ -2,15 +2,22 @@ import json
 from go2_webrtc_driver.constants import *
 
 class Command:
-    def __init__(self, payload, expect_reply=False):
+    def __init__(self, payload):
         self.topic = payload["topic"]
         self.options = payload["options"]
-        self.expect_reply = expect_reply
+        self.expect_reply = payload["expect_reply"]
+        self.update_switcher_mode = payload["update_switcher_mode"]
+        self.post_hook = payload["post_hook"]
+        self.additional_wait = payload["additional_wait"]
 
     def as_dict(self):
         return {
             'topic': self.topic,
-            'options': self.options
+            'options': self.options,
+            'expect_reply': self.expect_reply,
+            'update_switcher_mode': self.update_switcher_mode,
+            'post_hook': self.post_hook.as_dict() if self.post_hook is not None else {},
+            'additional_wait': self.additional_wait,
         }
 
     def to_json(self):
@@ -24,7 +31,11 @@ class Damp(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1001
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -36,7 +47,11 @@ class BalanceStand(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1002
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -48,7 +63,11 @@ class StopMove(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1003
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -60,7 +79,11 @@ class StandUp(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1004
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -72,7 +95,11 @@ class StandDown(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1005
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -84,7 +111,11 @@ class RecoveryStand(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1006
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -96,7 +127,11 @@ class Euler(Command):
             "options": {
                 "parameter": json.dumps({"x": roll, "y": pitch, "z": yaw}),
                 "api_id": 1007
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -108,7 +143,11 @@ class Move(Command):
             "options": {
                 "parameter": json.dumps({"x": x, "y": y, "z": z}),
                 "api_id": 1008
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -120,7 +159,11 @@ class Sit(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1009
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -132,7 +175,11 @@ class RiseSit(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1010
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -144,7 +191,11 @@ class SwitchGait(Command):
             "options": {
                 "parameter": {"data": t},
                 "api_id": 1011
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -156,7 +207,11 @@ class Trigger(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1012
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -168,7 +223,11 @@ class BodyHeight(Command):
             "options": {
                 "parameter": {"data": height},
                 "api_id": 1013
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -180,7 +239,11 @@ class FootRaiseHeight(Command):
             "options": {
                 "parameter": {"data": height},
                 "api_id": 1014
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -192,7 +255,11 @@ class SpeedLevel(Command):
             "options": {
                 "parameter": {"data": level},
                 "api_id": 1015
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -204,7 +271,11 @@ class Hello(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1016
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -216,7 +287,11 @@ class Stretch(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1017
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -249,7 +324,11 @@ class TrajectoryFollow(Command):
             "options": {
                 "parameter": path_p,
                 "api_id": 1018
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -261,7 +340,11 @@ class ContinuousGait(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1019
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -273,7 +356,11 @@ class Content(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1020
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -285,7 +372,11 @@ class Wallow(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1021
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -297,7 +388,11 @@ class Dance1(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1022
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -309,7 +404,11 @@ class Dance2(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1023
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -321,10 +420,13 @@ class GetFootRaiseHeight(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1025
-            }
+            },
+            "expect_reply": True,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
-        expect_reply = True
-        super().__init__(payload, expect_reply)
+        super().__init__(payload)
 
 # 1026
 class GetSpeedLevel(Command):
@@ -334,10 +436,13 @@ class GetSpeedLevel(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1026
-            }
+            },
+            "expect_reply": True,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
-        expect_reply = True
-        super().__init__(payload, expect_reply)
+        super().__init__(payload)
 
 # 1027
 class SwitchJoystick(Command):
@@ -347,7 +452,11 @@ class SwitchJoystick(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1027
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -359,7 +468,11 @@ class Pose(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1028
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -371,7 +484,11 @@ class Scrape(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1029
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -383,7 +500,11 @@ class FrontFlip(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1030
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -395,7 +516,11 @@ class FrontJump(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1031
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -407,7 +532,11 @@ class FrontPounce(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1032
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -419,7 +548,11 @@ class WiggleHips(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1033
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -431,7 +564,11 @@ class EconomicGait(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1035
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -443,7 +580,27 @@ class Heart(Command):
             "options": {
                 "parameter": "",
                 "api_id": 1036
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 1039
+class StandOut(Command):
+    def __init__(self, flag):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1039
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -455,7 +612,11 @@ class LeftFlip(Command):
             "options": {
                 "parameter": {"data": True},
                 "api_id": 1042
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -467,11 +628,15 @@ class BackFlip(Command):
             "options": {
                 "parameter": {"data": True},
                 "api_id": 1044
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
-# 1045
+# 1045 - LeadFollow
 class FreeWalk(Command):
     def __init__(self, flag: bool):
         payload = {
@@ -479,7 +644,11 @@ class FreeWalk(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1045
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -491,7 +660,11 @@ class FreeBound(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1046
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -503,7 +676,11 @@ class FreeJump(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1047
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -515,7 +692,11 @@ class FreeAvoid(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1048
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -527,7 +708,11 @@ class WalkStair(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1049
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -539,7 +724,11 @@ class WalkUpright(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1050
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -551,6 +740,61 @@ class CrossStep(Command):
             "options": {
                 "parameter": {"data": flag},
                 "api_id": 1051
-            }
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+## Motion Switcher
+
+# Get #1002
+class GetMotionSwitcherStatus(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["MOTION_SWITCHER"],
+            "options": {
+                "parameter": "",
+                "api_id": 1001
+            },
+            "expect_reply": True,
+            "update_switcher_mode": True,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+
+# Normal #1002
+class SetMotionSwitcherNormal(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["MOTION_SWITCHER"],
+            "options": {
+                "parameter": {"name": "normal"},
+                "api_id": 1002
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": GetMotionSwitcherStatus(),
+            "additional_wait": 5
+        }
+        super().__init__(payload)
+
+# AI #1002
+class SetMotionSwitcherAI(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["MOTION_SWITCHER"],
+            "options": {
+                "parameter": {"name": "ai"},
+                "api_id": 1002
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": GetMotionSwitcherStatus(),
+            "additional_wait": 5
         }
         super().__init__(payload)
