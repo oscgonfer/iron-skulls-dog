@@ -2,9 +2,10 @@ import json
 from go2_webrtc_driver.constants import *
 
 class Command:
-    def __init__(self, payload):
+    def __init__(self, payload, expect_reply=False):
         self.topic = payload["topic"]
         self.options = payload["options"]
+        self.expect_reply = expect_reply
 
     def as_dict(self):
         return {
@@ -323,7 +324,7 @@ class GetFootRaiseHeight(Command):
             }
         }
         expect_reply = True
-        super().__init__(payload)
+        super().__init__(payload, expect_reply)
 
 # 1026
 class GetSpeedLevel(Command):
@@ -336,7 +337,7 @@ class GetSpeedLevel(Command):
             }
         }
         expect_reply = True
-        super().__init__(payload)
+        super().__init__(payload, expect_reply)
 
 # 1027
 class SwitchJoystick(Command):
