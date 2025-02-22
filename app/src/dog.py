@@ -7,9 +7,19 @@ from config import *
 from tools import *
 from go2_webrtc_driver.constants import *
 
+from enum import IntEnum
+
+class DogMode(IntEnum):
+    MOVE=1 # Accepts any move command except Euler. Run, stair 1 and 2, walk, endurance
+    STANDING=2 # Accepts Euler
+    MOVING=3 # Moving with any of run, stair 1 and 2, walk, endurance
+    PRONE=5 # Down
+    LOCKED=6 # Posture locked, can only go prone
+    SAVE=7 # Seems to enter after a bit into this
+
 # TODO Make this stateful
 class Dog:
-    def __init__(self, conn=None, dry_run = False, broadcast_state = False):
+    def __init__(self, conn=None, dry_run = False, broadcast_state = False, mqtt_handler = None):
         # State
         self.state = {
             'LOW_STATE': None,
@@ -20,6 +30,7 @@ class Dog:
         self.lock = asyncio.Lock()
         self.dry_run = dry_run
         self.broadcast_state = broadcast_state
+        self.mqtt_handler = mqtt_handler
 
     async def connect(self):
         return await self.conn.connect()
@@ -96,22 +107,22 @@ class Dog:
 
     async def publish_state(self, channel):
         if self.broadcast_state:
-            async with websockets.connect(f'ws://{WS_IP}:{WS_PORT}/pub') as websocket:
-                await websocket.send(json.dumps(self.state))
+            await self.mqtt_handler.publish(topic=f'{STATE_TOPIC}/{channel}', \
+                payload=json.dumps(self.state))
 
-    async def lowstate_callback(self, message):
+    def lowstate_callback(self, message):
         current_message = message['data']
         self.state['LOW_STATE'] = current_message
-        await self.publish_state('LOW_STATE')
+        asyncio.gather(self.publish_state('LOW_STATE'))
 
-    async def multiplestate_callback(self, message):
+    def multiplestate_callback(self, message):
         # TODO For whatever reason this needs to be parsed into json
         current_message = json.loads(message['data'])
         self.state['MULTIPLE_STATE'] = current_message
-        await self.publish_state('MULTIPLE_STATE')
+        asyncio.gather(self.publish_state('MULTIPLE_STATE'))
 
-    async def sportstate_callback(self, message):
+    def sportstate_callback(self, message):
         current_message = message['data']
         self.state['LF_SPORT_MOD_STATE'] = current_message
-        await self.publish_state('LF_SPORT_MOD_STATE')
+        asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
 

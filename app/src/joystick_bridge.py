@@ -31,76 +31,62 @@ import pygame
 from dotenv import load_dotenv
 load_dotenv()
 
-from pythonosc import tcp_client
 from go2_webrtc_driver.constants import *
+from joystick_handler import JoystickHandler
+from mqtt_handler import MQTTHandler
+from dog import DogMode
 
-from joystick_handler import JoystickState
-import websockets
-
-def send_msg_no_reply(client, topic, msg):
-    if client is not None:
-        try:
-            client.send_message(topic, msg)
-        except BrokenPipeError:
-            client.close()
-            raise SystemExit("Broken pipe. Disconnected")
-
-async def ws_bridge(incoming_url, queue):
-    async with websockets.connect(incoming_url) as ws:
-        while True:
-            try:
-                data = await ws.recv()
-                # TODO Add filter for response
-                # Load json, and get data first,
-                # before putting it on the queue
-                await queue.put(('ws', data))
-            except websockets.exceptions.ConnectionClosed:
-                # TODO Handle a retry?
-                pass
-
-async def joystick_bridge(client=None, joystick=None, queue=None):
-
-    joystick_state = JoystickState(joystick)
+async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
+    dog_state = None
 
     while True:
-        joystick_values = await joystick_state.get_item_values()
-        std_out (f"Joystick values: {joystick_values}")
+        joystick_values = await joystick_handler.get_item_values()
+        # std_out (f"Joystick values: {joystick_values}")
         cmd = None
-        robot_state = 'BalanceStand'
 
         try:
             source, data = queue.get_nowait()
         except asyncio.QueueEmpty:
             pass
         else:
-            if source == 'ws':
-                print(f'WS Incomming: {data}')
+            if STATE_TOPIC in source:
+                try:
+                    payload = json.loads(data)
+                except json.decoder.JSONDecodeError:
+                    std_out('Malformed payload. Ignoring')
+                    pass
+                else:
+                    try:
+                        _dog_state = payload['LF_SPORT_MOD_STATE']['mode']
+                    except:
+                        std_out('Payload doesnt contain dog mode')
+                        pass
+                    else:
+                        dog_state = _dog_state
 
         # We are moving the axes
         if any([joystick_values[item] for item in joystick_values if 'Axis' in item]):
-            std_out ('Movement with axis!')
+            # std_out ('Movement with axis!')
 
-            # TODO Bring state from dog.py
-            if robot_state == "BalanceStand":
-                cmd = Move(
-                    x = round(joystick_values["Axis 1"] * JOY_SENSE["speed"], 2),
-                    y = round(joystick_values["Axis 0"] * JOY_SENSE["speed"], 2),
-                    z = round(joystick_values["Axis 2"] * JOY_SENSE["speed"], 2)
-                )
-            elif robot_state == 'Pose':
-                cmd = Euler(
-                    roll = round(joystick_values["Axis 0"] * JOY_SENSE["roll"], 2),
-                    pitch = round(joystick_values["Axis 1"] * JOY_SENSE["pitch"], 2),
-                    yaw = round(joystick_values["Axis 2"] * JOY_SENSE["yaw"], 2)
-                )
+            match dog_state:
+                case DogMode.MOVE | DogMode.MOVING:
+                    cmd = Move(
+                        x = round(joystick_values["Axis 1"] * JOY_SENSE["speed"], 2),
+                        y = round(joystick_values["Axis 0"] * JOY_SENSE["speed"], 2),
+                        z = round(joystick_values["Axis 2"] * JOY_SENSE["speed"], 2)
+                    )
+                case DogMode.STANDING:
+                    cmd = Euler(
+                        roll = round(joystick_values["Axis 0"] * JOY_SENSE["roll"], 2),
+                        pitch = round(joystick_values["Axis 1"] * JOY_SENSE["pitch"], 2),
+                        yaw = round(joystick_values["Axis 2"] * JOY_SENSE["yaw"], 2)
+                    )
 
-            if cmd is not None:
-                std_out (f'Robot command: {cmd.as_dict()}')
-                send_msg_no_reply(client, MOVE_TOPIC, cmd.to_json())
+            outgoing_topic = MOVE_TOPIC
 
         # We are pressing a button
         if any([joystick_values[item] for item in joystick_values if ('Axis' not in item and 'Hat' not in item)]):
-            std_out ('A button was pressed!')
+            # std_out ('A button was pressed!')
 
             for item in joystick_values:
                 if 'Axis' in item or 'Hat' in item:
@@ -125,28 +111,34 @@ async def joystick_bridge(client=None, joystick=None, queue=None):
                         # robot_state = BUTTON_CMD[item]
                         # std_out (f'Robot status {robot_state}')
 
-                        if cmd is not None:
-                            send_msg_no_reply(client, SPORT_TOPIC, cmd.to_json())
+                        outgoing_topic = SPORT_TOPIC
 
+                        # TODO Check for DogMode.MOVING? or DogMode.LOCKED? or DogMode.SAVE?
+
+        if cmd is not None:
+            std_out (f'Robot command: {cmd.as_dict()}')
+            await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+
+        # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
 
-async def start_bridge(client = None, joystick = None):
+async def start_bridge(mqtt_handler = None, joystick = None):
     queue = asyncio.Queue()
+    joystick_handler = JoystickHandler(joystick)
 
-    ws_task = asyncio.create_task(ws_bridge(incoming_url = f'ws://{WS_IP}:{WS_PORT}/sub', queue=queue))
-    joy_task = asyncio.create_task(joystick_bridge(client = client, joystick=joystick, queue=queue))
-
-    await asyncio.gather(*[ws_task, joy_task])
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(mqtt_handler.bridge_incomming(topic=f'{STATE_TOPIC}/#', queue=queue))
+        tg.create_task(joystick_bridge(joystick_handler=joystick_handler, queue=queue, mqtt_handler = mqtt_handler))
 
 async def main():
 
     std_out('Starting joystick coroutine...')
     coroutine = await start_bridge(
-        client = client,
+        mqtt_handler = mqtt_handler,
         joystick = joystick)
 
     loop = asyncio.get_event_loop()
-    std_out('Joystick coroutine started')
+    std_out('Bridge coroutine started')
 
     try:
         loop.run_until_complete(coroutine)
@@ -158,18 +150,18 @@ async def main():
         pygame.joystick.quit()
 
 if __name__ == '__main__':
+    # Start pygame
     pygame.init()
     pygame.joystick.init()
 
+    #Get joystick
     if pygame.joystick.get_count() > 0:
         joystick = pygame.joystick.Joystick(0)
         joystick.init()
     else:
         joystick = None
 
-    std_out('Starting TCP client...')
-    client = None
-    client = tcp_client.SimpleTCPClient(SERVER_IP, SERVER_PORT)
-    std_out('TCP client started')
+    # MQTT Handler
+    mqtt_handler = MQTTHandler(broker=MQTT_BROKER)
 
     asyncio.run(main())

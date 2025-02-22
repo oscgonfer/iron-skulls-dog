@@ -10,9 +10,9 @@ SERVER_IP = "127.0.0.1"
 SERVER_PORT = 9996
 OSSIA_PORT = 9997
 
-# WS Server
-WS_IP = "127.0.0.1"
-WS_PORT = 7005
+# MQTT
+MQTT_BROKER = "localhost"
+MQTT_RECONNECT = 5
 
 # TCP Message filter
 PRE_FILTER = "/dog"

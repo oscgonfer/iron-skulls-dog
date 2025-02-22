@@ -12,20 +12,26 @@ from config import *
 # Extras
 from tools import *
 from dog import Dog
-from osc_handler import OscHandler
-
-# TCP SERVER
-from pythonosc.osc_tcp_server import AsyncOSCTCPServer
-from pythonosc.dispatcher import Dispatcher
+from command_handler import CommandHandler
+from mqtt_handler import MQTTHandler
 
 # GO2 WEBRTC DRIVER
 from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection, WebRTCConnectionMethod
 from go2_webrtc_driver.constants import *
 
+# async def start_bridge(mqtt_handler, command_handler):
 
 async def main():
-    server = AsyncOSCTCPServer(SERVER_IP, SERVER_PORT, dispatcher)
-    await server.start()
+
+    queue = asyncio.Queue()
+    std_out('Creating tasks...')
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(mqtt_handler.bridge_incomming(topic=SPORT_TOPIC, queue=queue))
+        tg.create_task(mqtt_handler.bridge_incomming(topic=MOVE_TOPIC, queue=queue))
+        tg.create_task(mqtt_handler.bridge_incomming(topic=CAPTURE_TOPIC, queue=queue))
+
+        tg.create_task(command_handler.dispatch_commands(queue=queue))
+        std_out ("Looping forever...")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -50,21 +56,16 @@ if __name__ == "__main__":
         std_out("Running dry..")
         conn = None
 
-    dog = Dog(conn, dry_run=args.dry_run, broadcast_state=args.broadcast_state)
-    osc_handler = OscHandler(dog)
+    mqtt_handler = MQTTHandler(broker=MQTT_BROKER)
+    dog = Dog(conn, dry_run=args.dry_run, broadcast_state=args.broadcast_state, mqtt_handler=mqtt_handler)
 
     std_out ("Starting handlers...")
-    dispatcher = Dispatcher()
-
-    dispatcher.map(SPORT_FILTER, osc_handler.handle_sport_command)
-    dispatcher.map(MOVE_FILTER, osc_handler.handle_movement_command)
-    dispatcher.map(CAPTURE_FILTER, osc_handler.handle_capture_command)
+    command_handler = CommandHandler(dog)
 
     std_out ("Starting worker...")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    std_out ("Looping forever...")
     if not args.dry_run:
         loop.run_until_complete(dog.connect())
         loop.run_until_complete(dog.set_motion_switcher_status(desired_mode = 'normal'))

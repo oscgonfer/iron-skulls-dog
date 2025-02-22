@@ -54,7 +54,7 @@ class Axis(JoystickItem):
         super().__init__(name)
         self.position = 0
 
-class JoystickState:
+class JoystickHandler:
     def __init__(self, joystick):
         self.joystick = joystick
 
@@ -74,6 +74,7 @@ class JoystickState:
         self.buttons = self.init_items('buttons')
         self.axes = self.init_items('axes')
         self.hats = self.init_items('hats')
+
         self._status = {}
         self._sensitivity = JOY_SENSE
 
@@ -123,37 +124,34 @@ class JoystickState:
                     self.hats[hat].items[3].release()
 
         self.update_status()
-        self.update_sensitivity()
+        self.update_sensitivity() # Move to akai
         return self.status
 
     def update_sensitivity(self):
-
         # We are moving the hat
-        if any([self.status[item] for item in self.status if 'Hat' in item]):
-            std_out ('The hat was pressed!')
 
-            for item in self.status:
-                if 'Hat' not in item:
-                    continue
+        for item in self.status:
+            if 'Hat' not in item:
+                continue
 
-                if any(self.status[item]):
+            if any(self.status[item]):
 
-                    # Handles the hat // Changes joystick sensitivity
-                    if self.status[item][0]:
-                        self._sensitivity["speed"] = min(VAL_LIMITS["speed"][1], self._sensitivity["speed"] + 0.1)
-                    elif self.status[item][1]:
-                        self._sensitivity["speed"] = max(VAL_LIMITS["speed"][0], self._sensitivity["speed"] - 0.1)
+                # Handles the hat // Changes joystick sensitivity
+                if self.status[item][0]:
+                    self._sensitivity["speed"] = round(min(VAL_LIMITS["speed"][1], self._sensitivity["speed"] + 0.1), 3)
+                elif self.status[item][1]:
+                    self._sensitivity["speed"] = round(max(VAL_LIMITS["speed"][0], self._sensitivity["speed"] - 0.1), 3)
 
-                    if self.status[item][2]:
-                        self._sensitivity["roll"] = min(VAL_LIMITS["roll"][1], self._sensitivity["roll"] + 0.1)
-                        self._sensitivity["pitch"] = min(VAL_LIMITS["pitch"][1], self._sensitivity["pitch"] + 0.1)
-                        self._sensitivity["yaw"] = min(VAL_LIMITS["yaw"][1], self._sensitivity["yaw"] + 0.1)
-                    elif self.status[item][3]:
-                        self._sensitivity["roll"] = max(VAL_LIMITS["roll"][0], self._sensitivity["roll"] - 0.1)
-                        self._sensitivity["pitch"] = max(VAL_LIMITS["pitch"][0], self._sensitivity["pitch"] - 0.1)
-                        self._sensitivity["yaw"] = max(VAL_LIMITS["yaw"][0], self._sensitivity["yaw"] - 0.1)
+                if self.status[item][2]:
+                    self._sensitivity["roll"] = round(min(VAL_LIMITS["roll"][1], self._sensitivity["roll"] + 0.1), 3)
+                    self._sensitivity["pitch"] = round(min(VAL_LIMITS["pitch"][1], self._sensitivity["pitch"] + 0.1), 3)
+                    self._sensitivity["yaw"] = round(min(VAL_LIMITS["yaw"][1], self._sensitivity["yaw"] + 0.1), 3)
+                elif self.status[item][3]:
+                    self._sensitivity["roll"] = round(max(VAL_LIMITS["roll"][0], self._sensitivity["roll"] - 0.1), 3)
+                    self._sensitivity["pitch"] = round(max(VAL_LIMITS["pitch"][0], self._sensitivity["pitch"] - 0.1), 3)
+                    self._sensitivity["yaw"] = round(max(VAL_LIMITS["yaw"][0], self._sensitivity["yaw"] - 0.1), 3)
 
-                    std_out (f'New joysense speed: {self.sensitivity}')
+                std_out (f'New joysense speed: {self.sensitivity}', True)
 
     def update_status(self):
         # Representation of current joystick in a dict with names
