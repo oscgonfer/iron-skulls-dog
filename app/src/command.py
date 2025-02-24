@@ -412,6 +412,22 @@ class Dance2(Command):
         }
         super().__init__(payload)
 
+# 1024
+class GetBodyHeight(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": "",
+                "api_id": 1024
+            },
+            "expect_reply": True,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
 # 1025
 class GetFootRaiseHeight(Command):
     def __init__(self):
@@ -589,6 +605,7 @@ class Heart(Command):
         super().__init__(payload)
 
 # 1039
+# Handstand
 class StandOut(Command):
     def __init__(self, flag):
         payload = {
@@ -612,6 +629,22 @@ class LeftFlip(Command):
             "options": {
                 "parameter": {"data": True},
                 "api_id": 1042
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 1043
+class RightFlip(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": True},
+                "api_id": 1043
             },
             "expect_reply": False,
             "update_switcher_mode": False,
@@ -653,6 +686,7 @@ class FreeWalk(Command):
         super().__init__(payload)
 
 # 1046
+# TODO Same as 1304?
 class FreeBound(Command):
     def __init__(self, flag: bool):
         payload = {
@@ -716,7 +750,7 @@ class WalkStair(Command):
         }
         super().__init__(payload)
 
-# 1050
+# 1050 - Standup
 class WalkUpright(Command):
     def __init__(self, flag: bool):
         payload = {
@@ -733,6 +767,8 @@ class WalkUpright(Command):
         super().__init__(payload)
 
 # 1051
+# TODO - 1302 by legion
+# TODO - CrossWalk
 class CrossStep(Command):
     def __init__(self, flag: bool):
         payload = {
@@ -748,9 +784,96 @@ class CrossStep(Command):
         }
         super().__init__(payload)
 
+# 1301
+# TODO - Handstand - same as 1039?
+# TODO - Data needed?
+class Handstand(Command):
+    def __init__(self, flag: bool):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1301
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 1302
+# TODO - Same as 1051?
+# TODO - Data needed?
+class CrossStep(Command):
+    def __init__(self, flag: bool):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1302
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 1303
+# TODO - Data needed?
+class OneSidedStep(Command):
+    def __init__(self, flag: bool):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1303
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 1304 # Same as 1046?
+# TODO - Data needed?
+class Bound(Command):
+    def __init__(self, flag: bool):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1304
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 1305
+# TODO - Data needed?
+class MoonWalk(Command):
+    def __init__(self, flag: bool):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1305
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
 ## Motion Switcher
 
-# Get #1002
+#1002
 class GetMotionSwitcherStatus(Command):
     def __init__(self):
         payload = {
@@ -796,5 +919,106 @@ class SetMotionSwitcherAI(Command):
             "update_switcher_mode": False,
             "post_hook": GetMotionSwitcherStatus(),
             "additional_wait": 5
+        }
+        super().__init__(payload)
+
+## VUI
+class GetBrightness(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["VUI"],
+            "options": {
+                "parameter": "",
+                "api_id": 1006
+            },
+            "expect_reply": True,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SetBrightness(Command):
+    def __init__(self, brightness):
+        """
+            Brightness from 0 to 10
+        """
+        payload = {
+            "topic": RTC_TOPIC["VUI"],
+            "options": {
+                "parameter": {"brightness": brightness},
+                "api_id": 1005
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": GetBrightness(),
+            "additional_wait": 0.5
+        }
+        super().__init__(payload)
+
+class SetLEDColor(Command):
+    def __init__(self, color, time: None, flash_cycle: None):
+        """
+            VUI_COLOR options:
+            - 'white'
+            - 'red'
+            - 'yellow'
+            - 'blue'
+            - 'green'
+            - 'cyan'
+            - 'purple'
+            TODO - CHECK TIME parameter
+            # flash_cycle is between 499 and time*1000
+        """
+        parameter = {"color": color}
+
+        if time is not None:
+            parameter["time"] = time
+        if flash_cycle is not None:
+            parameter["flash_cycle"] = flash_cycle
+
+        payload = {
+            "topic": RTC_TOPIC["VUI"],
+            "options": {
+                "parameter": parameter,
+                "api_id": 1007
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0.5
+        }
+        super().__init__(payload)
+
+class GetVolume(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["VUI"],
+            "options": {
+                "parameter": "",
+                "api_id": 1004
+            },
+            "expect_reply": True,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SetVolume(Command):
+    def __init__(self, volume):
+        """
+            Brightness from 0 to 10
+        """
+        payload = {
+            "topic": RTC_TOPIC["VUI"],
+            "options": {
+                "parameter": {"volume": volume},
+                "api_id": 1003
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": GetVolume(),
+            "additional_wait": 0.5
         }
         super().__init__(payload)
