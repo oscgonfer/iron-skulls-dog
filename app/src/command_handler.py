@@ -32,12 +32,15 @@ class CommandHandler:
             except json.decoder.JSONDecodeError:
                 pass
             finally:
-                if source == SPORT_TOPIC or source == SWITCHER_TOPIC:
-                    await self.handle_async_command(_payload)
-                elif source == MOVE_TOPIC:
-                    self.handle_command(_payload)
-                elif source == CAPTURE_TOPIC:
-                    self.handle_capture_command(_payload)
+                if source in INCOMING_TOPICS:
+                    if INCOMING_TOPICS[source] == 'async':
+                        await self.handle_async_command(_payload)
+                    elif INCOMING_TOPICS[source] == 'sync':
+                        self.handle_command(_payload)
+                    elif INCOMING_TOPICS[source] == 'capture':
+                        self.handle_capture_command(_payload)
+                    else:
+                        std_out(f'Unknown handler command')
                 else:
                     std_out(f'Unknown source {source}')
 

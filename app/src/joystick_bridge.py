@@ -32,7 +32,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from go2_webrtc_driver.constants import *
-from joystick_handler import JoystickHandler
+from joystick_handler import JoystickHandler, JOY_SENSE
 from mqtt_handler import MQTTHandler
 from dog import DogMode
 
@@ -97,23 +97,16 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                 if joystick_values[item]:
                     if cmd_class is not None:
                         # if cmd_class in SAFETY_CMD:
-
                         #     cmd = SportCommand(gen_safe_command(BUTTON_CMD[item]))
                         #     std_out (f'Robot command {cmd.as_dict()}')
                         #     send_msg_no_reply(client, SAFE_TOPIC, cmd.to_json())
-
                         # else:
 
                         # TODO Could the joystick have associated parameter?
                         cmd = cmd_class()
                         std_out (f'Robot command {cmd.as_dict()}')
 
-                        # robot_state = BUTTON_CMD[item]
-                        # std_out (f'Robot status {robot_state}')
-
                         outgoing_topic = SPORT_TOPIC
-
-                        # TODO Check for DogMode.MOVING? or DogMode.LOCKED? or DogMode.SAVE?
 
         if cmd is not None:
             std_out (f'Robot command: {cmd.as_dict()}')

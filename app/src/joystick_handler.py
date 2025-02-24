@@ -2,6 +2,52 @@ from config import *
 from tools import *
 import pygame
 
+BUTTONS = {
+    0: "A",
+    1: "B",
+    2: "S",
+    3: "X",
+    4: "Y",
+    6: "L1",
+    7: "R1",
+    8: "L2",
+    9: "R2",
+    10: "SELECT",
+    11: "START",
+    13: "LBALL",
+    14: "RBALL"
+}
+
+AXES = {
+    0: "Axis 0", # Left Axis right (-1)/left (1)
+    1: "Axis 1", # Left Axis up (1)/down (-1)
+    2: "Axis 2", # Right Axis right (-1)/left (1)
+    3: "Axis 3"  # Right Axis up (1)/down (-1)
+}
+
+HATS = {
+    0: "Hat 0"
+    # First is left (-1) or right (1)
+    # Second is up (1) or down (-1)
+}
+
+BALLS = {
+}
+
+JOY_SENSE = {
+    "speed": 0.6,
+    "roll": 0.75,
+    "yaw": 0.6,
+    "pitch": 0.75
+}
+
+VAL_LIMITS = {
+    "speed": [0, 1],
+    "roll": [0, 0.75],
+    "yaw": [0, 0.6],
+    "pitch": [0, 0.75]
+}
+
 class JoystickItem:
     def __init__(self, name, enabled = True):
         self.name = name

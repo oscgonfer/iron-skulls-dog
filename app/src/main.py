@@ -26,10 +26,8 @@ async def main():
     std_out('Creating tasks...')
 
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(mqtt_handler.bridge_incomming(topic=SPORT_TOPIC, queue=queue))
-        tg.create_task(mqtt_handler.bridge_incomming(topic=MOVE_TOPIC, queue=queue))
-        tg.create_task(mqtt_handler.bridge_incomming(topic=CAPTURE_TOPIC, queue=queue))
-        tg.create_task(mqtt_handler.bridge_incomming(topic=SWITCHER_TOPIC, queue=queue))
+        for topic in INCOMING_TOPICS:
+            tg.create_task(mqtt_handler.bridge_incomming(topic=topic, queue=queue))
 
         tg.create_task(command_handler.dispatch_commands(queue=queue))
         std_out ("Looping forever...")
