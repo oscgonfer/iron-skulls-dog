@@ -14,23 +14,25 @@ MQTT_BROKER = "localhost"
 MQTT_RECONNECT = 5
 
 # Message filter
-PRE_FILTER = "/dog"
+DOG_FILTER = "/dog"
+CMD_FILTER = "/cmd"
+OUT_FILTER = "/out"
 
 ## Incoming topics
 
-SPORT_FILTER = f"{PRE_FILTER}/sport/#"
+SPORT_FILTER = f"{DOG_FILTER}/sport/#"
 SPORT_TOPIC = SPORT_FILTER.replace("/#","")
 
-MOVE_FILTER = f"{PRE_FILTER}/move/#"
+MOVE_FILTER = f"{DOG_FILTER}/move/#"
 MOVE_TOPIC = MOVE_FILTER.replace("/#","")
 
-SWITCHER_FILTER = f"{PRE_FILTER}/switch/#"
+SWITCHER_FILTER = f"{DOG_FILTER}/switch/#"
 SWITCHER_TOPIC = SWITCHER_FILTER.replace("/#","")
 
-VUI_FILTER = f"{PRE_FILTER}/vui/#"
+VUI_FILTER = f"{DOG_FILTER}/vui/#"
 VUI_TOPIC = VUI_FILTER.replace("/#","")
 
-CAPTURE_FILTER = f"{PRE_FILTER}/capture/#"
+CAPTURE_FILTER = f"{CMD_FILTER}/capture/#"
 CAPTURE_TOPIC = CAPTURE_FILTER.replace("/#","")
 
 # SAFE_FILTER = f"{PRE_FILTER}/safety/#"
@@ -46,10 +48,11 @@ INCOMING_TOPICS = {
 
 ## Outgoing topics
 
-STATE_FILTER = f"{PRE_FILTER}/state/#"
+
+STATE_FILTER = f"{OUT_FILTER}/state/#"
 STATE_TOPIC = STATE_FILTER.replace("/#","")
 
-RESPONSE_FILTER = f"{PRE_FILTER}/response/#"
+RESPONSE_FILTER = f"{OUT_FILTER}/response/#"
 RESPONSE_TOPIC = RESPONSE_FILTER.replace("/#","")
 # ---------------------------------------------------
 
