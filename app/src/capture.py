@@ -27,13 +27,15 @@ class Capture:
             "topic": None,
             "options": None
         }
+        empty_cmd = Command(payload)
         self.add(payload, None)
         self.start_time = datetime.datetime.now()
         self.status = CaptureStatus.running
 
-    def add(self, command, osc_topic):
+    def add(self, command, topic):
         if self.status != CaptureStatus.running: return
         timedelta = datetime.datetime.now()-self.start_time
+
         self.commands.append(
             {
                 'timestamp': {
@@ -41,7 +43,7 @@ class Capture:
                     'microseconds': timedelta.microseconds
                     },
                 'command': command.to_json(),
-                'osc_topic': osc_topic
+                'mqtt_topic': topic
             }
         )
 
@@ -53,7 +55,9 @@ class Capture:
         self.end_time = datetime.datetime.now()
 
     def store(self):
-        if self.status != CaptureStatus.stopped: return
+        if self.status != CaptureStatus.stopped: 
+            std_out('Need to stop capture first')
+            return
         with open (self.file, 'w') as file:
             json.dump(self.commands, file)
 
