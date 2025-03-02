@@ -5,10 +5,10 @@ class Command:
     def __init__(self, payload):
         self.topic = payload["topic"]
         self.options = payload["options"]
-        self.expect_reply = payload["expect_reply"]
-        self.update_switcher_mode = payload["update_switcher_mode"]
-        self.post_hook = payload["post_hook"]
-        self.additional_wait = payload["additional_wait"]
+        self.expect_reply = payload["expect_reply"] if "expect_reply" in payload else False
+        self.update_switcher_mode = payload["update_switcher_mode"] if "update_switcher_mode" in payload else False
+        self.post_hook = payload["post_hook"] if "post_hook" in payload else None
+        self.additional_wait = payload["additional_wait"] if "additional_wait" in payload else 0
 
     def as_dict(self):
         return {
@@ -16,7 +16,7 @@ class Command:
             'options': self.options,
             'expect_reply': self.expect_reply,
             'update_switcher_mode': self.update_switcher_mode,
-            'post_hook': self.post_hook.as_dict() if self.post_hook is not None else {},
+            'post_hook': self.post_hook.as_dict() if self.post_hook is not None else None,
             'additional_wait': self.additional_wait,
         }
 
