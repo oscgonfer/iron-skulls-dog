@@ -1,5 +1,6 @@
 pygame
 python-dotenv
 python-osc
+aiomqtt
 # go2_webrtc_driver
 PySide6
