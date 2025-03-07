@@ -82,7 +82,9 @@ class APCMK2Input():
 class APCMK2Pad(APCMK2Input):
     def __init__(self, channel, name):
         self.effect: APCMK2PadEffect = APCMK2PadEffect.ON_100
+        self.prev_effect: APCMK2PadEffect = APCMK2PadEffect.ON_100
         self.color: APCMK2PadColor = APCMK2PadColor.BLACK
+        self.prev_color: APCMK2PadColor = APCMK2PadColor.BLACK
         super().__init__(channel, name)
     
     def to_dict(self):
@@ -126,8 +128,7 @@ class APCMK2Handler():
         self.port = port
         self.midi_in, _ = open_midiinput(self.port)
         self.midi_out, _ = open_midioutput(self.port)
-        
-        
+
         self.propagate = propagate
 
         self.pads = {item: APCMK2Pad(item, item) for item in range(APC_MK2_NUM_PADS)}
@@ -143,11 +144,18 @@ class APCMK2Handler():
         # TODO validate keymap
         # TODO use keymap to start inputs / actions then update status
         self.update_status()
+        
         if self.keymap is None:
             for pad in self.pads.values():
+                # TODO decide init values
+                effect=APCMK2PadEffect.ON_25
+                if pad.channel<APC_MK2_NUM_PADS/2:
+                    color=APCMK2PadColor.ORANGE
+                else:
+                    color=APCMK2PadColor.YELLOW
                 self.light_pad(pad=pad,
-                    effect=APCMK2PadEffect.ON_100,
-                    color=APCMK2PadColor.BLACK
+                    effect=effect,
+                    color=color
                 )
             for button in self.buttons.values():
                 self.light_button(button=button,
@@ -158,7 +166,11 @@ class APCMK2Handler():
         self.midi.close_port()
 
     def light_pad(self, pad: APCMK2Pad, effect: APCMK2PadEffect, color: APCMK2PadColor):
+        self.pads[pad.channel].prev_color = self.pads[pad.channel].color
+        self.pads[pad.channel].prev_effect = self.pads[pad.channel].effect
         self.midi_out.send_message([effect.value, pad.channel, color.value])
+        self.pads[pad.channel].color = color
+        self.pads[pad.channel].effect = effect
 
     def light_button(self, button: APCMK2Button, effect: APCMK2ButtonEffect):
         self.midi_out.send_message([0x90, button.channel, effect.value])
@@ -193,8 +205,14 @@ class APCMK2Handler():
                 # Pad pressed
                 self.pads[channel].value = value
                 print ('Pad:', self.pads[channel].name, self.pads[channel].value)
+
+                # TODO Decide behaviour
                 if self.pads[channel].action is None:
-                    self.light_pad(self.pads[channel], APCMK2PadEffect.ON_75, APCMK2PadColor.Orange)
+                    if message[0]==NOTE_ON:
+                        self.light_pad(self.pads[channel], APCMK2PadEffect.ON_75, APCMK2PadColor.AQUA_GREEN)
+                    elif message[1]:
+                        self.light_pad(self.pads[channel], self.pads[channel].prev_effect, self.pads[channel].prev_color)
+                
             elif channel in self.buttons:
                 self.buttons[channel].value = value
                 print ('Button:', self.buttons[channel].name, self.buttons[channel].value)
