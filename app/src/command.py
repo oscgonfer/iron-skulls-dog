@@ -937,6 +937,22 @@ class SetMotionSwitcherAI(Command):
         }
         super().__init__(payload)
 
+# AI #1002
+class SetMotionSwitcherAdvanced(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["MOTION_SWITCHER"],
+            "options": {
+                "parameter": {"name": "advanced"},
+                "api_id": 1002
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": GetMotionSwitcherStatus(),
+            "additional_wait": 5
+        }
+        super().__init__(payload)
+
 ## VUI
 class GetBrightness(Command):
     def __init__(self):
