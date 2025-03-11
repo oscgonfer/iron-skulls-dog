@@ -26,6 +26,12 @@ class Command:
 
 # 1001
 class Damp(Command):
+    """
+    Enter damping state
+    All motor joints stop moving and enter a damping state.
+    This mode has the highest priority and is used for emergency 
+    stops in unexpected situations
+    """
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -42,6 +48,12 @@ class Damp(Command):
 
 # 1002
 class BalanceStand(Command):
+    """
+    Unlock
+    Release the joint motor lock and switch from normal standing, 
+    crouching, continuous stepping state to balanced standing mode.
+    In this mode, push the remote control stick and the robot will move
+    """
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -58,6 +70,9 @@ class BalanceStand(Command):
 
 # 1003
 class StopMove(Command):
+    """
+    Stop the current action and restore most instructions to their default values.
+    """
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -74,6 +89,13 @@ class StopMove(Command):
 
 # 1004
 class StandUp(Command):
+    """
+    Joint locking, standing high
+    The robot dog stands normally tall and the motor joints remain locked.
+    Compared to the balanced standing mode, the posture of the robot
+    dog in this mode will not always be balanced. 
+    The default standing height is 0.32m
+    """
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -90,6 +112,10 @@ class StandUp(Command):
 
 # 1005
 class StandDown(Command):
+    """
+    Joint locking, standing low
+    The robotic dog lies down and the motor joint remains locked
+    """
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -106,6 +132,11 @@ class StandDown(Command):
 
 # 1006
 class RecoveryStand(Command):
+    """
+    Recovery standing
+    Return from overturned to balanced standing. 
+    For safety, the response will only return to standing in the overturned state
+    """
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -138,6 +169,21 @@ class Euler(Command):
 
 # 1008
 class Move(Command):
+    """
+    Move at the specified speed
+    Control the moving speed, the set speed is the speed 
+    of the body coordinate system. It is recommended that you call
+    BalanceStand once before you call Move to ensure that you unlock 
+    and enter a removable state.
+    Value range (Normal):
+        Vx: [-0.6~0.6 ] (m/s)
+        Vy: Value range [-0.4~0.4 ] (m/s) 
+        Vyaw: Value range [-0.8~0.8 ] (rad/s)
+    Value range (AI):
+        Vx: [-0.6~0.6 ] (m/s)
+        Vy: Value range [-0.4~0.4 ] (m/s) 
+        Vyaw: Value range [-0.8~0.8 ] (rad/s)
+    """
     def __init__(self, x: float, y: float, z: float):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -185,7 +231,11 @@ class RiseSit(Command):
         super().__init__(payload)
 
 # 1011
+# TODO ASYNC?
 class SwitchGait(Command):
+    """
+
+    """
     def __init__(self, t: int):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -264,7 +314,12 @@ class FootRaiseHeight(Command):
 
 # 1015
 class SpeedLevel(Command):
-    def __init__(self, level: float):
+    """
+        Set the speed range
+        Speed range enumeration value, 
+        with values of -1 for slow speed, and 1 for fast speed
+    """
+    def __init__(self, level: int):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -349,6 +404,12 @@ class TrajectoryFollow(Command):
 
 # 1019
 class ContinuousGait(Command):
+    """
+    Continuous walk
+    flag: Set true to open continuous walk, and false to close continuous walk
+    After starting a continuous walk, the robot dog will keep stepping, 
+    even if the current speed is 0
+    """
     def __init__(self, flag: int):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -986,8 +1047,8 @@ class SetBrightness(Command):
             },
             "expect_reply": False,
             "update_switcher_mode": False,
-            "post_hook": GetBrightness(),
-            "additional_wait": 0.5
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
@@ -1057,8 +1118,8 @@ class SetVolume(Command):
             },
             "expect_reply": False,
             "update_switcher_mode": False,
-            "post_hook": GetVolume(),
-            "additional_wait": 0.5
+            "post_hook": None,
+            "additional_wait": 0
         }
         super().__init__(payload)
 
