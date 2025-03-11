@@ -16,6 +16,8 @@ class DogMode(IntEnum):
     PRONE=5 # Down
     LOCKED=6 # Posture locked, can only go prone
     SAVE=7 # Seems to enter after a bit into this
+    # TODO Mode advanced?
+    AI=9 # TODO - what happens here, just AI?
 
 # TODO Make this stateful
 class Dog:

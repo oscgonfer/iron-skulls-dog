@@ -46,11 +46,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.dry_run:
-        conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA, \
-            ip=os.getenv("GO2_IP"))
+        # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA, ip=os.getenv("GO2_IP"))
         # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalSTA, \
         #   serialNumber =os.getenv("GO2_SN"))
-        # conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalAP)
+        conn = Go2WebRTCConnection(WebRTCConnectionMethod.LocalAP)
     else:
         std_out("Running dry..")
         conn = None

@@ -18,7 +18,7 @@ class Capture:
         self.name = name
         self.start_time = None
         self.end_time = None
-        self.status = CaptureStatus.null
+        self.status: CaptureStatus = CaptureStatus.null
         self.commands = []
         self.file = os.path.join(CAPTURE_PATH, f'{name}.cap')
 
