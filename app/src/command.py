@@ -1,5 +1,6 @@
 import json
 from go2_webrtc_driver.constants import *
+from tools import map_range
 
 class Command:
     def __init__(self, payload):
@@ -217,7 +218,14 @@ class Trigger(Command):
 
 # 1013
 class BodyHeight(Command):
-    def __init__(self, height: float):
+    def __init__(self, height: float, value_range = None):
+        """
+        Body height between -0.18 and 0.03
+        If value_range is not None, we assume they are
+        passing us a range to map values to
+        """
+        if value_range is not None:
+            height = map_range(height, value_range[0], value_range[1], -0.18, 0.03)
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -233,7 +241,14 @@ class BodyHeight(Command):
 
 # 1014
 class FootRaiseHeight(Command):
-    def __init__(self, height: float):
+    def __init__(self, height: float, value_range = None):
+        """
+        Foot raise height height between -0.06, 0.03
+        If value_range is not None, we assume they are
+        passing us a range to map values to
+        """
+        if value_range is not None:
+            height = map_range(height, value_range[0], value_range[1], -0.06, 0.03)
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -939,10 +954,14 @@ class GetBrightness(Command):
         super().__init__(payload)
 
 class SetBrightness(Command):
-    def __init__(self, brightness):
+    def __init__(self, brightness, value_range: None):
         """
-            Brightness from 0 to 10
+            Brightness from 0 to 10.
+            If value_range is not none, we assume they are 
+            passing us a scale to map the values on.
         """
+        if value_range is not None: 
+            brightness = map_range(brightness, value_range[0], value_range[1], 0, 10)
         payload = {
             "topic": RTC_TOPIC["VUI"],
             "options": {
@@ -1006,10 +1025,14 @@ class GetVolume(Command):
         super().__init__(payload)
 
 class SetVolume(Command):
-    def __init__(self, volume):
+    def __init__(self, volume, value_range: None):
         """
-            Brightness from 0 to 10
+            Volume from 0 to 10
+            If value_range is not none, we assume they are 
+            passing us a scale to map the values on.
         """
+        if value_range is not None: 
+            volume = map_range(volume, value_range[0], value_range[1], 0, 10)
         payload = {
             "topic": RTC_TOPIC["VUI"],
             "options": {

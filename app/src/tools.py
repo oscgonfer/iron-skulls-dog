@@ -11,6 +11,10 @@ def std_out(msg, priority=False):
         else:
             sys.stdout.write(msg)
 
+def map_range(num, inMin, inMax, outMin, outMax):
+  return outMin + (float(num - inMin) / float(inMax - inMin) * (outMax
+                  - outMin))
+
 async def tcp_state_client(message):
     reader, writer = await asyncio.open_connection(
                     LOGGER_IP, LOGGER_PORT)
