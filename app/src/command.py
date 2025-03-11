@@ -1045,3 +1045,8 @@ class SetVolume(Command):
             "additional_wait": 0.5
         }
         super().__init__(payload)
+
+CMD_W_DATA = [
+    'Pose',
+
+]

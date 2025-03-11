@@ -1,4 +1,5 @@
-from command import *
+# TODO
+# Add ways for it to map movement to music and emit the sound via jack
 
 # ---------------------------------------------------
 # Config
@@ -43,35 +44,14 @@ INCOMING_TOPICS = {
     MOVE_TOPIC: 'sync',
     SWITCHER_TOPIC: 'async',
     CAPTURE_TOPIC: 'capture',
-    VUI_TOPIC: 'async'
+    VUI_TOPIC: 'sync'
 }
 
 ## Outgoing topics
-
 
 STATE_FILTER = f"{OUT_FILTER}/state/#"
 STATE_TOPIC = STATE_FILTER.replace("/#","")
 
 RESPONSE_FILTER = f"{OUT_FILTER}/response/#"
 RESPONSE_TOPIC = RESPONSE_FILTER.replace("/#","")
-# ---------------------------------------------------
-
-# ---------------------------------------------------
-# JOYSTICK
-# 8bitDo SN30Pro+ Commands
-BUTTON_CMD = {
-    "A": StandDown,
-    "B": StandUp,
-    "S": None,
-    "X": Sit,
-    "Y": Hello,
-    "L1": None,
-    "R1": None,
-    "L2": None,
-    "R2": None,
-    "SELECT": RecoveryStand,
-    "START": None,
-    "LBALL": BalanceStand,
-    "RBALL": Pose
-}
 # ---------------------------------------------------

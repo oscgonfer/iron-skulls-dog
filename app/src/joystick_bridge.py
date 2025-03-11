@@ -32,7 +32,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from go2_webrtc_driver.constants import *
-from joystick_handler import JoystickHandler, JOY_SENSE
+from joystick_handler import JoystickHandler
 from mqtt_handler import MQTTHandler
 from dog import DogMode
 
@@ -40,8 +40,8 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
 
     while True:
-        joystick_values = await joystick_handler.get_item_values()
-        # std_out (f"Joystick values: {joystick_values}")
+        joystick_status = await joystick_handler.get_item_status()
+        # std_out (f"Joystick status: {joystick_status}")
         cmd = None
 
         try:
@@ -65,37 +65,43 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         dog_state = _dog_state
 
         # We are moving the axes
-        if any([joystick_values[item] for item in joystick_values if 'Axis' in item]):
-            # std_out ('Movement with axis!')
-
+        if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
+            std_out ('Movement with axis!')
             match dog_state:
-                case DogMode.MOVE | DogMode.MOVING:
+                case DogMode.MOVE | DogMode.MOVING | DogMode.AI:
                     cmd = Move(
-                        x = round(joystick_values["Axis 1"] * JOY_SENSE["speed"], 2),
-                        y = round(joystick_values["Axis 0"] * JOY_SENSE["speed"], 2),
-                        z = round(joystick_values["Axis 2"] * JOY_SENSE["speed"], 2)
+                        x = round(joystick_status["Axis 1"]\
+                            * joystick_handler.sensitivity["vxy"], 2),
+                        y = round(joystick_status["Axis 0"]\
+                            * joystick_handler.sensitivity["vxy"], 2),
+                        z = round(joystick_status["Axis 2"]\
+                            * joystick_handler.sensitivity["vyaw"], 2)
                     )
                 case DogMode.STANDING:
                     cmd = Euler(
-                        roll = round(joystick_values["Axis 0"] * JOY_SENSE["roll"], 2),
-                        pitch = round(joystick_values["Axis 1"] * JOY_SENSE["pitch"], 2),
-                        yaw = round(joystick_values["Axis 2"] * JOY_SENSE["yaw"], 2)
+                        roll = round(joystick_status["Axis 0"]\
+                            * joystick_handler.sensitivity["roll"], 2),
+                        pitch = round(joystick_status["Axis 1"]\
+                            * joystick_handler.sensitivity["pitch"], 2),
+                        yaw = round(joystick_status["Axis 2"]\
+                            * joystick_handler.sensitivity["yaw"], 2)
                     )
 
             outgoing_topic = MOVE_TOPIC
 
         # We are pressing a button
-        if any([joystick_values[item] for item in joystick_values if ('Axis' not in item and 'Hat' not in item)]):
+        if any([joystick_status[item] for item in joystick_status if ('Axis' not in item and 'Hat' not in item)]):
             # std_out ('A button was pressed!')
 
-            for item in joystick_values:
-                if 'Axis' in item or 'Hat' in item:
-                    continue
+            for item in joystick_status:
+                if 'Axis' in item or 'Hat' in item: continue
+                
+                if joystick_status[item]:
 
-                cmd_class = BUTTON_CMD[item]
-
-                if joystick_values[item]:
+                    cmd_class = joystick_handler.buttons[item].command
+                    
                     if cmd_class is not None:
+                        # print (cmd_class)
                         # if cmd_class in SAFETY_CMD:
                         #     cmd = SportCommand(gen_safe_command(BUTTON_CMD[item]))
                         #     std_out (f'Robot command {cmd.as_dict()}')
@@ -103,8 +109,16 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         # else:
 
                         # TODO Could the joystick have associated parameter?
-                        cmd = cmd_class()
-                        std_out (f'Robot command {cmd.as_dict()}')
+
+                    # TODO 
+                    # Check dogstate for Pose or other toggle commands
+                    # Is there anything reflecting those?
+                    # case DogMode.MOVE | DogMode.MOVING | DogMode.AI:
+
+                        if cmd_class.__name__ in CMD_W_DATA:
+                            cmd = cmd_class(True)
+                        else:
+                            cmd = cmd_class()
 
                         outgoing_topic = SPORT_TOPIC
 
