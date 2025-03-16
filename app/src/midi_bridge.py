@@ -55,8 +55,8 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                 _mi = midi_values[midi_item]
                 if _mi['trigger']:
                     action = _mi["action"]
-                    if action.type == APCMK2ActionType.command:
-                        if 'FADER' in _mi['name']:
+                    if action.type == APCMK2ActionType.command and action.command is not None:
+                        if 'FADER' in str(_mi['name']):
                             cmd = action.command(_mi['input_state'], 
                             value_range = APC_MK2_FADER_LIMITS)
                         else:
@@ -67,9 +67,14 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                         outgoing_topic = action.payload
 
         if cmd is not None:
-            std_out (f'Robot command: {cmd.as_dict()}')
-            await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
-
+            if midi_handler.current_state.id != 'preview':
+                std_out (f'Robot command: {cmd.as_dict()}')
+                await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+            else:
+                std_out (f'PREVIEW: Command: {action.command.__name__}', priority = True, timestamp = False)
+                print ()
+                std_out (f'{action.command.__doc__}', priority = True, timestamp = False)
+                print ()
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
 

@@ -4,9 +4,9 @@ import sys
 import asyncio
 import json
 
-def std_out(msg, priority=False):
+def std_out(msg, priority=False, timestamp = TIMESTAMP):
     if DEBUG or priority:
-        if TIMESTAMP:
+        if timestamp:
             sys.stdout.write(f"{datetime.datetime.now()}: {msg}\n")
         else:
             sys.stdout.write(msg)

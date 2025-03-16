@@ -1,62 +1,99 @@
 from rtmidi.midiutil import open_midiinput, open_midioutput
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON, CONTROLLER_CHANGE
 from rtmidi import MidiOut
-
+from statemachine import StateMachine, Event
+from statemachine.states import States
 
 from tools import std_out
-from apc_mk2_config import *
+from apc_mk2_config import *  
 
-class APCMK2Handler():
+class APCMK2Handler(StateMachine):
+
+    _ = States.from_enum(APCMK2Mode, initial=APCMK2Mode.normal)
+    
+    ev_preview = _.normal.to(_.preview)
+    ev_finish_preview = _.preview.to(_.normal)
+
+    ev_record = _.normal.to(_.record)
+    ev_finish_record = _.record.to(_.normal)
+
+    ev_recording = _.record.to(_.recording)
+    ev_finish_recording = _.recording.to(_.record)
+
+    ev_edit = _.normal.to(_.edit)
+    ev_finish_editing = _.edit.to(_.normal)
+
+    _status = {}
+
     def __init__(self, port=MIDI_PORT_NAME):
         self.port = port
         self.midi_in, _ = open_midiinput(self.port)
         self.midi_out, _ = open_midioutput(self.port)
         self.midi_in.set_callback(self.message_callback)
 
-        self._mode: APCMK2Mode = APCMK2Mode.normal
-        
         self.pads = {}
         self.buttons = {}
         self.faders = {}
 
-        for item in range(APC_MK2_NUM_PADS):
-            if item not in ACTION_MAP[self._mode.name]["pads"]: continue
-            action = ACTION_MAP[self._mode.name]["pads"][item]
-            color = COLOR_EFFECT_MAP["pads"][self._mode.name][action.type.name]["idle"]["color"]
-            effect = COLOR_EFFECT_MAP["pads"][self._mode.name][action.type.name]["idle"]["effect"]
-            self.pads[item] = APCMK2Pad(channel = item, name = item, color = color, effect = effect, action = ACTION_MAP[self._mode.name]["pads"][item])
-        
-        for item in APCMK2ButtonName:
-            if item.name not in ACTION_MAP[self._mode.name]["buttons"]: continue 
-            action = ACTION_MAP[self._mode.name]["buttons"][item.name]
-            effect = COLOR_EFFECT_MAP["buttons"][self._mode.name][action.type.name]["idle"]["effect"]
-            self.buttons[item.value] = APCMK2Button(item.value, item.name, action = action)
-        
-        for item in APCMK2FaderName:
-            if item.name not in ACTION_MAP[self._mode.name]["faders"]: continue 
-            action = ACTION_MAP[self._mode.name]["faders"][item.name]
-            self.faders[item.value] = APCMK2Fader(item.value, item.name, action = action)        
-        
-        self._status = {}
-        self.update_status()
-        self.show_lights()
+        super(APCMK2Handler, self).__init__()
 
+        self.assign_pads()
+        self.assign_buttons()
+        self.assign_faders()
+        self.update_status()
+        self.update_lights()
+
+    def on_transition(self,event_data, event: Event):
+        assert event_data.event == event
+
+        print (
+
+            f"Running {event.name} from {event_data.transition.source.id} to "
+            f"{event_data.transition.target.id}"
+        )
+
+    def on_enter_state(self, event, state):
+        self.assign_pads()
+        self.update_lights()
+
+    def assign_pads(self):
+        for item in range(APC_MK2_NUM_PADS):
+            if item not in ACTION_MAP[self.current_state.id]["pads"]: continue
+            action = ACTION_MAP[self.current_state.id]["pads"][item]
+
+            _map = COLOR_EFFECT_MAP["pads"][self.current_state.id][action.type.name]
+
+            self.pads[item] = APCMK2Pad(channel = item, name = item, action = ACTION_MAP[self.current_state.id]["pads"][item], map = _map)
+
+    def assign_buttons(self):
+        for item in APCMK2ButtonName:
+            if item.name not in ACTION_MAP[self.current_state.id]["buttons"]: continue 
+            action = ACTION_MAP[self.current_state.id]["buttons"][item.name]
+
+            _map = COLOR_EFFECT_MAP["buttons"][self.current_state.id][action.type.name]
+
+            self.buttons[item.value] = APCMK2Button(item.value, item.name, action = action, map = _map)
+
+    def assign_faders(self):
+        for item in APCMK2FaderName:
+            if item.name not in ACTION_MAP[self.current_state.id]["faders"]: continue 
+            action = ACTION_MAP[self.current_state.id]["faders"][item.name]
+            self.faders[item.value] = APCMK2Fader(item.value, item.name, action = action)
+        
     def close(self):
         self.midi_in.close_port()
         self.midi_out.close_port()
 
-    def show_lights(self):
+    def update_lights(self):
         for pad in self.pads.values():
+            # if pad.trigger: 
+                # print (pad.effect.value, pad.channel, pad.color.value)
             self.light_pad(pad=pad)
         for button in self.buttons.values():
             self.light_button(button=button)
 
     def light_pad(self, pad: APCMK2Pad):
-        # self.pads[pad.channel].prev_color = self.pads[pad.channel].color
-        # self.pads[pad.channel].prev_effect = self.pads[pad.channel].effect
         self.midi_out.send_message([pad.effect.value, pad.channel, pad.color.value])
-        # self.pads[pad.channel].color = color
-        # self.pads[pad.channel].effect = effect
 
     def light_button(self, button: APCMK2Button):
         self.midi_out.send_message([0x90, button.channel, button.effect.value])
@@ -67,7 +104,6 @@ class APCMK2Handler():
         return self._status
     
     def update_status(self):
-
         for pad in self.pads.values():
             self._status[pad.name] = pad.to_dict()
         for button in self.buttons.values():
@@ -77,25 +113,42 @@ class APCMK2Handler():
 
     def trigger_pad_action(self, note, channel, value):
         action = self.pads[channel].action
-        # match self.mode:
-        #     case APCMK2Mode.normal:
-        #     case APCMK2Mode.edit:
-        #     case APCMK2Mode.record:
-        #     case APCMK2Mode.recording:
-        #     case APCMK2Mode.preview:
-
-    def change_mode(self, mode):
-        print (mode)
+        if action.type == APCMK2ActionType.command:
+            if note == NOTE_ON:
+                self.pads[channel].press()
+                
+            elif note == NOTE_OFF:
+                self.pads[channel].release()
+        
+        self.update_lights()
 
     def trigger_button_action(self, note, channel, value):
-        print (note, channel, value)
-        print (self._mode)
-        print (self.buttons[channel].name)
+
         action = self.buttons[channel].action
-        print (action.command, action.payload, action.type)
+        # print ('Current state:', self.current_state)
+
         if action.type == APCMK2ActionType.change:
-            print ("Mode change requested")
-            self.change_mode(action.payload)
+            if note == NOTE_ON:
+                self.buttons[channel].press()
+                self.send('ev_'+action.payload.name)
+                
+            elif note == NOTE_OFF:
+                self.buttons[channel].release()
+                self.send('ev_finish_'+action.payload.name)
+                
+            # print ('Updated state:', self.current_state)
+
+        elif action.type == APCMK2ActionType.command_toggle:
+            if note == NOTE_ON:
+                self.buttons[channel].press()
+                # TODO Make this depend on the actual dogstate
+                for obutton in self.buttons.values():
+                    if obutton.channel == channel: continue
+                    self.buttons[obutton.channel].release()
+                
+            print ('Updated state:', self.current_state)
+        
+        self.update_lights()
     
     def reset_triggers(self):
         for pad in self.pads.values():
@@ -119,30 +172,22 @@ class APCMK2Handler():
             if channel in self.faders:
                 self.faders[channel].input_state = value
                 self.faders[channel].trigger = True
-                print (f'Fader: ', self.faders[channel].name, self.faders[channel].input_state)
+                # print (f'Fader: ', self.faders[channel].name, self.faders[channel].input_state)
         elif note == NOTE_OFF or note == NOTE_ON:
             # Pad or button pressed
             if channel in self.pads:
                 # Pad pressed
                 self.pads[channel].input_state = value
                 self.pads[channel].trigger = True
-                print ('Pad:', self.pads[channel].name, self.pads[channel].input_state, self.pads[channel].trigger)
+                # print ('Pad:', note, self.pads[channel].name, self.pads[channel].input_state, self.pads[channel].trigger)
 
-                # # TODO Decide behaviour
-                # if self.pads[channel].action is None:
-                #     if note==NOTE_ON:
-                #         self.pads[channel].color = APCMK2PadColor.AQUA_GREEN
-                #         self.pads[channel].effect = APCMK2PadEffect.ON_75
-                #     elif note==NOTE_OFF:
-                #         self.pads[channel].color = APCMK2PadColor.AQUA_GREEN
-                #         self.pads[channel].effect = APCMK2PadEffect.ON_50
                 self.trigger_pad_action(note, channel, value)
 
             elif channel in self.buttons:
                 # Button pressed
                 self.buttons[channel].trigger = True
                 self.buttons[channel].input_state = value
-                print ('Button:', self.buttons[channel].name, self.buttons[channel].input_state)
+                # print ('Button:', self.buttons[channel].name, self.buttons[channel].input_state)
                 self.trigger_button_action(note, channel, value)
 
         self.update_status()

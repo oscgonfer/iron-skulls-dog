@@ -1,6 +1,8 @@
 from enum import Enum
 from config import *
 from command import *
+from rtmidi.midiconstants import NOTE_OFF, NOTE_ON, CONTROLLER_CHANGE
+
 
 MIDI_PORT_NAME = 'APC mini mk2:APC mini mk2 APC mini mk2 Contr 20:0'
 APC_MK2_NUM_PADS = 64
@@ -23,7 +25,7 @@ class APCMK2ButtonName(Enum):
     DRUM = 0x75
     NOTE = 0x76
     STOP_ALL = 0x77
-    SHIFT = 0x7a
+    SHIFT = 0x7A
 
 class APCMK2FaderName(Enum):
     FADER_1 = 0x30
@@ -100,20 +102,20 @@ class APCMK2ActionType(Enum):
     null = 0
     subprocess = 1 # External subprocess (for instance, play_capture.py)
     command = 2 # Dog command
-    change = 3 # Change mode
+    command_toggle = 2 # Dog command with toggle
+    change = 4 # Change mode
 
 class APCMK2ActionStatus(Enum):
     idle = 0
     running = 1
-    waiting = 2
 
 class APCMK2Action():
-    def __init__(self, command, payload, atype, on):
+    def __init__(self, command, payload, atype, on = NOTE_ON):
         self.command = command
         self.payload = payload # message payload, command payload
         self.type: APCMK2ActionType = atype
         self.status: APCMK2ActionStatus = APCMK2ActionStatus.idle
-        self.on: NOTE_ON
+        self.on = on
 
 class APCMK2Input():
     def __init__(self, channel: int, name: str, action: APCMK2Action = None):
@@ -124,13 +126,21 @@ class APCMK2Input():
         self.action = action
 
 class APCMK2Pad(APCMK2Input):
-    def __init__(self, channel, name, color: APCMK2PadColor = APCMK2PadColor.BLACK, effect: APCMK2PadEffect = APCMK2PadEffect.ON_100, action: APCMK2Action = None):
-        self.color = color
-        # self.prev_color: APCMK2PadColor = APCMK2PadColor.BLACK
-        self.effect = effect
-        # self.prev_effect: APCMK2PadEffect = APCMK2PadEffect.ON_100
+    def __init__(self, channel, name, action: APCMK2Action = None, map: {} = None):
+        self.map = map
         super().__init__(channel, name, action)
+        self.release()
     
+    def press(self):
+        self.action.status = APCMK2ActionStatus.running
+        self.color = self.map["running"]["color"]
+        self.effect = self.map["running"]["effect"]
+
+    def release(self):
+        self.action.status = APCMK2ActionStatus.idle
+        self.color = self.map["idle"]["color"]
+        self.effect = self.map["idle"]["effect"]
+
     def to_dict(self):
         return {
             'effect': self.effect.name,
@@ -143,9 +153,19 @@ class APCMK2Pad(APCMK2Input):
         }
     
 class APCMK2Button(APCMK2Input):
-    def __init__(self, channel, name, effect: APCMK2ButtonEffect = APCMK2ButtonEffect.OFF, action: APCMK2Action = None):
-        self.effect = effect
+    def __init__(self, channel, name, action: APCMK2Action = None, map: {} = None):
+        self.map = map
+        
         super().__init__(channel, name, action)
+        self.release()
+    
+    def press(self):
+        self.action.status = APCMK2ActionStatus.running
+        self.effect = self.map["running"]["effect"]
+
+    def release(self):
+        self.action.status = APCMK2ActionStatus.idle
+        self.effect = self.map["idle"]["effect"]
 
     def to_dict(self):
         return {
@@ -195,12 +215,12 @@ COLOR_EFFECT_MAP = {
                 "running": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
             },
             "subprocess": {
-                "idle": {"color": APCMK2PadColor.ORANGE, "effect": APCMK2PadEffect.PULSE_1_4},
+                "idle": {"color": APCMK2PadColor.ORANGE, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.AQUA_GREEN, "effect": APCMK2PadEffect.ON_100},
             },
             "command": {
-                "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.PULSE_1_4},
-                "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+                "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.PULSE_1_2},
+                "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.PULSE_1_2},
             }
         }
     }, 
@@ -217,6 +237,10 @@ COLOR_EFFECT_MAP = {
             "command": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "command_toggle": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.BLINK},
             },
             "change": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
@@ -239,6 +263,10 @@ COLOR_EFFECT_MAP = {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
             },
+            "command_toggle": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.BLINK},
+            },
             "change": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
@@ -250,10 +278,74 @@ COLOR_EFFECT_MAP = {
 ACTION_MAP = {
     "normal": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change, on = NOTE_ON)
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+        },
+        "pads": {
+        },
+        "faders": {
+            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+        }
+    },
+    "preview": {
+        "buttons": {
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+        },
+        "pads": {
+        },
+        "faders": {
+            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+        }
+    },
+    "record": {
+        "buttons": {
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+        },
+        "pads": {
+        },
+        "faders": {
+            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+        }
+    },
+    "recording": {
+        "buttons": {
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+        },
+        "pads": {
+        },
+        "faders": {
+            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+        }
+    },
+    "edit": {
+        "buttons": {
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
         },
         "pads": {
         },
@@ -266,6 +358,46 @@ ACTION_MAP = {
     }
 }
 
+pad_commands ={
+    7: [RecoveryStand, SPORT_TOPIC],
+    24: [BalanceStand, SPORT_TOPIC],
+    25: [StandUp, SPORT_TOPIC],
+    26: [StandDown, SPORT_TOPIC]
+}
+
 # TODO make this into a json
 for item in range(APC_MK2_NUM_PADS):
-    ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.null)
+    print (item)
+    if item in pad_commands:
+        command = pad_commands[item][0]
+        payload = pad_commands[item][1]
+        atype = APCMK2ActionType.command
+    else:
+        command = None
+        payload = None
+        atype = APCMK2ActionType.null
+    
+    print (command, payload)
+    if item <32:
+
+        # Commands
+        ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
+
+        ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
+
+        ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
+
+        ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
+
+        ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
+    else:
+        # Captures
+        ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+
+        ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+
+        ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+
+        ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+
+        ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
