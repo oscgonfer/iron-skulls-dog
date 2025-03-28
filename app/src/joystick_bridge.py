@@ -68,7 +68,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
         if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
             std_out ('Movement with axis!')
             match dog_state:
-                case DogMode.MOVE | DogMode.MOVING | DogMode.AI:
+                case DogMode.MOVE | DogMode.MOVING | DogMode.AI_AGILE | DogMode.AI_FREEAVOID | DogMode.AI_FREEBOUND | DogMode.AI_WALKSTAIR | DogMode.AI_FREEJUMP:
                     cmd = Move(
                         x = round(joystick_status["Axis 1"]\
                             * joystick_handler.sensitivity["vxy"], 2),
