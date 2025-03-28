@@ -3,6 +3,7 @@ __pycache__
 .pass
 
 *.cap
+*.bak
 .qtcreator/
 
 **/venv/
