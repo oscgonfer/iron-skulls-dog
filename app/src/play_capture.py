@@ -11,7 +11,7 @@ import datetime
 async def main():
 
     start_time = datetime.datetime.now()
-    for item in capture:
+    for item in capture['commands']:
         timestamp = datetime.timedelta(seconds = item["timestamp"]["seconds"], microseconds=item["timestamp"]["microseconds"])
         cmd = Command(json.loads(item["command"]))
         topic = item["mqtt_topic"]

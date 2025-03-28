@@ -2,7 +2,8 @@ from enum import Enum
 from config import *
 from command import *
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON, CONTROLLER_CHANGE
-
+from midi_map import pad_commands, cap_files
+from capture import CaptureCommand, CaptureAction
 
 MIDI_PORT_NAME = 'APC mini mk2:APC mini mk2 APC mini mk2 Contr 20:0'
 APC_MK2_NUM_PADS = 64
@@ -100,10 +101,14 @@ class APCMK2Mode(Enum):
 
 class APCMK2ActionType(Enum):
     null = 0
-    subprocess = 1 # External subprocess (for instance, play_capture.py)
-    command = 2 # Dog command
-    command_toggle = 2 # Dog command with toggle
-    change = 4 # Change mode
+    command = 1 # Dog command
+    dog_mode_toggle = 2 # Dog command with toggle group
+    apc_mode_change = 4 # Change mode
+    apc_mode_toggle = 5 # Toggle mode on NOTE_ON / NOTE_OFF
+    subprocess = 6 # External subprocess (for instance, play_capture.py)
+    capture = 7
+    unassigned = 8 # Unassigned
+
 
 class APCMK2ActionStatus(Enum):
     idle = 0
@@ -198,8 +203,12 @@ COLOR_EFFECT_MAP = {
                 "running": {"color": APCMK2PadColor.LAVENDER, "effect": APCMK2PadEffect.ON_100},
             },
             "subprocess": {
-                "idle": {"color": APCMK2PadColor.ORANGE, "effect": APCMK2PadEffect.ON_50},
-                "running": {"color": APCMK2PadColor.AQUA_GREEN, "effect": APCMK2PadEffect.ON_100},
+                "idle": {"color": APCMK2PadColor.GREEN, "effect": APCMK2PadEffect.ON_50},
+                "running": {"color": APCMK2PadColor.AQUA_GREEN, "effect": APCMK2PadEffect.PULSE_1_2},
+            },
+            "unassigned": {
+                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
+                "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_2},
             },
             "command": {
                 "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
@@ -207,8 +216,46 @@ COLOR_EFFECT_MAP = {
             },
         },
         "edit": {},
-        "record": {},
-        "recording": {},
+        "record": {
+            "null": {
+                "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.PULSE_1_2},
+                "running": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
+            },
+            "subprocess": {
+                "idle": {"color": APCMK2PadColor.SKY_BLUE, "effect": APCMK2PadEffect.ON_50},
+                "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+            },
+            "capture": {
+                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.PULSE_1_2},
+                "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_16},
+            },
+            "command": {
+                "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
+                "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+            },
+        },
+        "recording": {
+            "null": {
+                "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.PULSE_1_2},
+                "running": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
+            },
+            "subprocess": {
+                "idle": {"color": APCMK2PadColor.SKY_BLUE, "effect": APCMK2PadEffect.ON_50},
+                "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+            },
+            "capture": {
+                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.PULSE_1_2},
+                "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_16},
+            },
+            "unassigned": {
+                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
+                "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_50},
+            },
+            "command": {
+                "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
+                "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+            },
+        },
         "preview": {
             "null": {
                 "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
@@ -217,6 +264,10 @@ COLOR_EFFECT_MAP = {
             "subprocess": {
                 "idle": {"color": APCMK2PadColor.ORANGE, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.AQUA_GREEN, "effect": APCMK2PadEffect.ON_100},
+            },
+            "unassigned": {
+                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
+                "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_16},
             },
             "command": {
                 "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.PULSE_1_2},
@@ -238,18 +289,72 @@ COLOR_EFFECT_MAP = {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
             },
-            "command_toggle": {
+            "dog_mode_toggle": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
-                "running": {"effect": APCMK2ButtonEffect.BLINK},
+                "running": {"effect": APCMK2ButtonEffect.ON},
             },
-            "change": {
+            "apc_mode_change": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "apc_mode_toggle": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            }
+        },
+        "edit": {},
+        "record": {
+            "null": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "subprocess": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "command": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "dog_mode_toggle": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "apc_mode_change": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "apc_mode_toggle": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
             },
         },
-        "edit": {},
-        "record": {},
-        "recording": {},
+        "recording": {
+            "null": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "subprocess": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "command": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "dog_mode_toggle": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.BLINK},
+            },
+            "apc_mode_change": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "apc_mode_toggle": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+        },
         "preview": {
             "null": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
@@ -263,11 +368,15 @@ COLOR_EFFECT_MAP = {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
             },
-            "command_toggle": {
+            "dog_mode_toggle": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.BLINK},
             },
-            "change": {
+            "apc_mode_change": {
+                "idle": {"effect": APCMK2ButtonEffect.OFF},
+                "running": {"effect": APCMK2ButtonEffect.ON},
+            },
+            "apc_mode_toggle": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
                 "running": {"effect": APCMK2ButtonEffect.ON},
             },
@@ -278,10 +387,13 @@ COLOR_EFFECT_MAP = {
 ACTION_MAP = {
     "normal": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
+            "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.record, atype=APCMK2ActionType.apc_mode_change),
+            "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
@@ -294,10 +406,12 @@ ACTION_MAP = {
     },
     "preview": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
+            "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
@@ -310,10 +424,13 @@ ACTION_MAP = {
     },
     "record": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
+            "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.normal, atype=APCMK2ActionType.apc_mode_change),
+            "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
         },
         "pads": {
         },
@@ -326,10 +443,14 @@ ACTION_MAP = {
     },
     "recording": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
+            "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            # TODO Make something to discard recordings?
+            "CLIP_STOP": APCMK2Action(command=CaptureCommand(action=CaptureAction.DISCARD, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
         },
         "pads": {
         },
@@ -342,10 +463,10 @@ ACTION_MAP = {
     },
     "edit": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command_toggle),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.change)
+            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
+            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
+            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
+            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle)
         },
         "pads": {
         },
@@ -358,16 +479,7 @@ ACTION_MAP = {
     }
 }
 
-pad_commands ={
-    7: [RecoveryStand, SPORT_TOPIC],
-    24: [BalanceStand, SPORT_TOPIC],
-    25: [StandUp, SPORT_TOPIC],
-    26: [StandDown, SPORT_TOPIC]
-}
-
-# TODO make this into a json
 for item in range(APC_MK2_NUM_PADS):
-    print (item)
     if item in pad_commands:
         command = pad_commands[item][0]
         payload = pad_commands[item][1]
@@ -376,10 +488,8 @@ for item in range(APC_MK2_NUM_PADS):
         command = None
         payload = None
         atype = APCMK2ActionType.null
-    
-    print (command, payload)
-    if item <32:
 
+    if item <APC_MK2_NUM_PADS/2:
         # Commands
         ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
 
@@ -392,12 +502,26 @@ for item in range(APC_MK2_NUM_PADS):
         ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
     else:
         # Captures
-        ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+        if item in cap_files:
+            ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command='play', payload=item, atype=APCMK2ActionType.subprocess)
 
-        ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+            ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command='preview', payload=item, atype=APCMK2ActionType.subprocess)
 
-        ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+            ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
 
-        ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+            ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+            
+        else: 
+            ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
 
-        ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.subprocess)
+            ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+
+            ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+
+            ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+
+        ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.unassigned)
+
+
+
+

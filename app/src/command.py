@@ -21,7 +21,17 @@ class Command:
             'additional_wait': self.additional_wait,
         }
 
-    def to_json(self):
+    def as_dict_reduced(self):
+        return {
+            'topic': self.topic,
+            'options': self.options,
+            'expect_reply': self.expect_reply,
+            'update_switcher_mode': self.update_switcher_mode,
+            'additional_wait': self.additional_wait,
+        }
+
+    def to_json(self, reduced = False):
+        if reduced: return json.dumps(self.as_dict_reduced())
         return json.dumps(self.as_dict())
 
 # 1001
@@ -332,6 +342,22 @@ class SpeedLevel(Command):
             "additional_wait": 0
         }
         super().__init__(payload)
+
+# 1015 - High
+class SpeedLevelHigh(SpeedLevel):
+    """
+        Set the speed range to High
+    """
+    def __init__(self):
+        super().__init__(level=1)
+
+# 1015 - Low
+class SpeedLevelLow(SpeedLevel):
+    """
+        Set the speed range to Low
+    """
+    def __init__(self):
+        super().__init__(level=-1)
 
 # 1016
 class Hello(Command):
@@ -747,7 +773,7 @@ class BackFlip(Command):
 
 # 1045 - LeadFollow
 class FreeWalk(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -764,7 +790,7 @@ class FreeWalk(Command):
 # 1046
 # TODO Same as 1304?
 class FreeBound(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -780,7 +806,7 @@ class FreeBound(Command):
 
 # 1047
 class FreeJump(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -796,7 +822,7 @@ class FreeJump(Command):
 
 # 1048
 class FreeAvoid(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -812,7 +838,7 @@ class FreeAvoid(Command):
 
 # 1049
 class WalkStair(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -828,7 +854,7 @@ class WalkStair(Command):
 
 # 1050 - Standup
 class WalkUpright(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -846,7 +872,7 @@ class WalkUpright(Command):
 # TODO - 1302 by legion
 # TODO - CrossWalk
 class CrossStep(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -864,7 +890,7 @@ class CrossStep(Command):
 # TODO - Handstand - same as 1039?
 # TODO - Data needed?
 class Handstand(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -882,7 +908,7 @@ class Handstand(Command):
 # TODO - Same as 1051?
 # TODO - Data needed?
 class CrossStep(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -899,7 +925,7 @@ class CrossStep(Command):
 # 1303
 # TODO - Data needed?
 class OneSidedStep(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -1125,5 +1151,4 @@ class SetVolume(Command):
 
 CMD_W_DATA = [
     'Pose',
-
 ]
