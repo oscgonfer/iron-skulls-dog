@@ -13,7 +13,7 @@ class MQTTHandler(object):
         while True:
             try:
                 async with client:
-                    std_out(f'Subscribing to {topic}')
+                    std_out(f'Subscribing to {topic}', priority=True)
                     await client.subscribe(topic)
                     async for message in client.messages:
                         await queue.put((topic, message.payload))
