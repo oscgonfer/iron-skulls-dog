@@ -9,6 +9,7 @@ from go2_webrtc_driver.constants import *
 
 from enum import IntEnum
 
+# TODO Finish modes
 class DogMode(IntEnum):
     MOVE=1 # Accepts any move command except Euler. Run, stair 1 and 2, walk, endurance
     STANDING=2 # Accepts Euler
@@ -17,7 +18,11 @@ class DogMode(IntEnum):
     LOCKED=6 # Posture locked, can only go prone
     SAVE=7 # Seems to enter after a bit into this
     # TODO Mode advanced?
-    AI=9 # TODO - what happens here, just AI?
+    AI_AGILE=9 # TODO - what happens here, just AI?
+    AI_FREEBOUND=15
+    AI_FREEJUMP=16
+    AI_FREEAVOID=17
+    AI_WALKSTAIR=18
 
 # TODO Make this stateful
 class Dog:
@@ -81,10 +86,12 @@ class Dog:
             std_out('Sending command post_hook')
             cmd = Command(command.post_hook)
             await self.send_async_command(cmd)
+        
         std_out('Done')
 
     def send_command(self, command):
         # No reply command
+        std_out('Got command', priority=True)
         std_out(f"Command topic: {command.topic}")
         std_out(f"Command options: {command.options}")
 
