@@ -78,12 +78,8 @@ class APCMK2PadColor(Enum):
 class APCMK2Mode(Enum):
     # Normal Mode
     # Trigger: Default. Record key when in recording
-    # Trigger commands or recordings, use faders, or enter record, edit mode
+    # Trigger commands or recordings, use faders, or enter record mode
     normal = 0 
-    # Edit mode
-    # Trigger: Edit Key
-    # Move or delete commands or recordings
-    edit = 1 
     # Record mode
     # Trigger: Record key (REC ARM)
     # Only can select where to put a recording, if selects on one that exists, overwrites. 
@@ -215,7 +211,6 @@ COLOR_EFFECT_MAP = {
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
             },
         },
-        "edit": {},
         "record": {
             "null": {
                 "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.PULSE_1_2},
@@ -302,7 +297,6 @@ COLOR_EFFECT_MAP = {
                 "running": {"effect": APCMK2ButtonEffect.ON},
             }
         },
-        "edit": {},
         "record": {
             "null": {
                 "idle": {"effect": APCMK2ButtonEffect.OFF},
@@ -450,23 +444,7 @@ ACTION_MAP = {
             "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
             # TODO Make something to discard recordings?
-            "CLIP_STOP": APCMK2Action(command=CaptureCommand(action=CaptureAction.DISCARD, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
-        },
-        "pads": {
-        },
-        "faders": {
-            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
-        }
-    },
-    "edit": {
-        "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.command),
-            "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle)
+            # "CLIP_STOP": APCMK2Action(command=CaptureCommand(action=CaptureAction.DISCARD, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
         },
         "pads": {
         },
@@ -499,7 +477,6 @@ for item in range(APC_MK2_NUM_PADS):
 
         ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
 
-        ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=atype)
     else:
         # Captures
         if item in cap_files:
@@ -519,9 +496,6 @@ for item in range(APC_MK2_NUM_PADS):
             ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
 
             ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
-
-        ACTION_MAP["edit"]["pads"][item] = APCMK2Action(command=command, payload=payload, atype=APCMK2ActionType.unassigned)
-
 
 
 
