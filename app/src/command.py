@@ -3,13 +3,15 @@ from go2_webrtc_driver.constants import *
 from tools import map_range
 
 class Command:
-    def __init__(self, payload):
+    def __init__(self, payload, associated_modes: int = None, toggle = False):
         self.topic = payload["topic"]
         self.options = payload["options"]
         self.expect_reply = payload["expect_reply"] if "expect_reply" in payload else False
         self.update_switcher_mode = payload["update_switcher_mode"] if "update_switcher_mode" in payload else False
         self.post_hook = payload["post_hook"] if "post_hook" in payload else None
         self.additional_wait = payload["additional_wait"] if "additional_wait" in payload else 0
+        self.associated_modes = associated_modes
+        self.toggle = toggle
 
     def as_dict(self):
         if self.post_hook is None:
@@ -73,7 +75,7 @@ class BalanceStand(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[1])
 
 # 1003
 class StopMove(Command):
@@ -115,7 +117,7 @@ class StandUp(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[6])
 
 # 1005
 class StandDown(Command):
@@ -135,7 +137,7 @@ class StandDown(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[5, 7])
 
 # 1006
 class RecoveryStand(Command):
@@ -219,7 +221,7 @@ class Sit(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[10])
 
 # 1010
 class RiseSit(Command):
@@ -370,7 +372,7 @@ class Hello(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1017
 class Stretch(Command):
@@ -386,7 +388,7 @@ class Stretch(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 SPORT_PATH_POINT_SIZE = 30
 # 1018
@@ -461,7 +463,7 @@ class Content(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1021
 class Wallow(Command):
@@ -477,7 +479,7 @@ class Wallow(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1022
 class Dance1(Command):
@@ -493,7 +495,7 @@ class Dance1(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1023
 class Dance2(Command):
@@ -509,7 +511,7 @@ class Dance2(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1024
 class GetBodyHeight(Command):
@@ -605,7 +607,7 @@ class Scrape(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1030
 class FrontFlip(Command):
@@ -637,7 +639,7 @@ class FrontJump(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[12])
 
 # 1032
 class FrontPounce(Command):
@@ -653,7 +655,7 @@ class FrontPounce(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[13])
 
 # 1033
 class WiggleHips(Command):
@@ -669,7 +671,7 @@ class WiggleHips(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[0])
 
 # 1035
 class EconomicGait(Command):
@@ -701,12 +703,29 @@ class Heart(Command):
             "post_hook": None,
             "additional_wait": 0
         }
+        super().__init__(payload, associated_modes=[0])
+
+# 1037
+# NOT AVAILABLE
+class Dance3(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": "",
+                "api_id": 1037
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
         super().__init__(payload)
 
 # 1039
 # Handstand
 class StandOut(Command):
-    def __init__(self, flag):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -718,7 +737,7 @@ class StandOut(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes = [3], toggle=True)
 
 # 1042
 class LeftFlip(Command):
@@ -782,10 +801,9 @@ class FreeWalk(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[9])
 
 # 1046
-# TODO Same as 1304?
 class FreeBound(Command):
     def __init__(self, flag: bool = True):
         payload = {
@@ -799,7 +817,7 @@ class FreeBound(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[15], toggle=True)
 
 # 1047
 class FreeJump(Command):
@@ -815,7 +833,7 @@ class FreeJump(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[16], toggle=True)
 
 # 1048
 class FreeAvoid(Command):
@@ -831,7 +849,7 @@ class FreeAvoid(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[17], toggle=True)
 
 # 1049
 class WalkStair(Command):
@@ -847,7 +865,7 @@ class WalkStair(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[18], toggle=True)
 
 # 1050 - Standup
 class WalkUpright(Command):
@@ -863,12 +881,11 @@ class WalkUpright(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[19], toggle=True)
 
 # 1051
-# TODO - 1302 by legion
-# TODO - CrossWalk
-class CrossStep(Command):
+# CrossWalk (crosstep before)
+class CrossWalk(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
@@ -881,70 +898,16 @@ class CrossStep(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
-
-# 1301
-# TODO - Handstand - same as 1039?
-# TODO - Data needed?
-class Handstand(Command):
-    def __init__(self, flag: bool = True):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": flag},
-                "api_id": 1301
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
-
-# 1302
-# TODO - Same as 1051?
-# TODO - Data needed?
-class CrossStep(Command):
-    def __init__(self, flag: bool = True):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": flag},
-                "api_id": 1302
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+        super().__init__(payload, associated_modes=[20], toggle=True)
 
 # 1303
-# TODO - Data needed?
 class OneSidedStep(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
-                "parameter": {"data": flag},
+                "parameter": {},
                 "api_id": 1303
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
-
-# 1304 # Same as 1046?
-# TODO - Data needed?
-class Bound(Command):
-    def __init__(self, flag: bool):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": flag},
-                "api_id": 1304
             },
             "expect_reply": False,
             "update_switcher_mode": False,
@@ -955,12 +918,13 @@ class Bound(Command):
 
 # 1305
 # TODO - Data needed?
+# Not available?
 class MoonWalk(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool=True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
-                "parameter": {"data": flag},
+                "parameter": {},
                 "api_id": 1305
             },
             "expect_reply": False,
@@ -971,7 +935,6 @@ class MoonWalk(Command):
         super().__init__(payload)
 
 ## Motion Switcher
-
 #1002
 class GetMotionSwitcherStatus(Command):
     def __init__(self):

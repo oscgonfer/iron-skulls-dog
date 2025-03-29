@@ -25,10 +25,10 @@ class APCMK2Handler(StateMachine):
     ev_recording = _.record.to(_.recording)
     ev_finish_recording = _.recording.to(_.normal)
 
-    ev_edit = _.normal.to(_.edit)
-    ev_finish_editing = _.edit.to(_.normal)
-
     _status = {}
+
+    _dog_mode = None
+    _dog_state = None
 
     def __init__(self, port=MIDI_PORT_NAME):
         self.port = port
@@ -101,6 +101,42 @@ class APCMK2Handler(StateMachine):
         self.midi_in.close_port()
         self.midi_out.close_port()
 
+    def update_dog_mode(self, mode):
+        if mode == 'null': self._dog_mode = None
+        else: self._dog_mode = mode
+
+        self.update_dog_mode_toggles()
+    
+    def update_dog_state(self, state):
+        self._dog_state = state
+
+        self.update_dog_state_toggles()
+
+    def update_dog_mode_toggles(self):
+        for button in self.buttons.values():
+            if button.action.type == APCMK2ActionType.dog_mode_toggle:
+                if self._dog_mode is not None:
+                    if self._dog_mode in button.action.command.__name__.lower():
+                        self.buttons[button.channel].press()
+                    else:
+                        self.buttons[button.channel].release()
+                    self.light_button(button=button)
+
+    def update_dog_state_toggles(self):
+        if self._dog_state == None: return
+        for pad in self.pads.values():
+            if pad.action.type == APCMK2ActionType.command:
+                if pad.action.command is None: continue
+                pad_cmd=pad.action.command()
+                if pad_cmd.associated_modes is None: continue
+
+                if any([self._dog_state == cmd_assoc_mode for cmd_assoc_mode in pad_cmd.associated_modes]):
+                    self.pads[pad.channel].press()
+                else:
+                    self.pads[pad.channel].release()
+        
+        self.update_lights()
+            
     def update_lights(self):
         for pad in self.pads.values():
             # if pad.trigger:
@@ -134,13 +170,6 @@ class APCMK2Handler(StateMachine):
             return
         
         action = self.pads[channel].action
-
-        if action.type == APCMK2ActionType.command:
-            if note == NOTE_ON:
-                self.pads[channel].press()
-                
-            elif note == NOTE_OFF:
-                self.pads[channel].release()
 
         if self.target_pad is None:
             if action.type == APCMK2ActionType.capture:
@@ -192,7 +221,6 @@ class APCMK2Handler(StateMachine):
                 self.send('ev_finish_'+action.payload.name)
                 
             print ('Updated state:', self.current_state)
-            update_state = True
 
         elif action.type == APCMK2ActionType.apc_mode_change:
             print ('Current state:', self.current_state)
@@ -206,20 +234,8 @@ class APCMK2Handler(StateMachine):
                     self.buttons[channel].press()
                 
             print ('Updated state:', self.current_state)
-            update_state = True
-
-        # TODO - Remove this and make it based on the actual dogstate
-        elif action.type == APCMK2ActionType.dog_mode_toggle:
-            if note == NOTE_ON:
-                self.buttons[channel].press()
-                self.light_button(self.buttons[channel])
-                # TODO Make this depend on the actual dogstate
-                for obutton in self.buttons.values():
-                    if obutton.channel == channel: continue
-                    self.buttons[obutton.channel].release()
-                    self.light_button(self.buttons[obutton.channel])
                         
-        if update_state: self.update_lights()
+        self.update_lights()
     
     def reset_triggers(self):
         for pad in self.pads.values():
