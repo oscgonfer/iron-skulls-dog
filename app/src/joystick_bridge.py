@@ -34,7 +34,7 @@ load_dotenv()
 from go2_webrtc_driver.constants import *
 from joystick_handler import JoystickHandler
 from mqtt_handler import MQTTHandler
-from dog import DogMode
+from dog import DogState
 
 async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
@@ -68,7 +68,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
         if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
             std_out ('Movement with axis!')
             match dog_state:
-                case DogMode.MOVE | DogMode.MOVING | DogMode.AI_AGILE | DogMode.AI_FREEAVOID | DogMode.AI_FREEBOUND | DogMode.AI_WALKSTAIR | DogMode.AI_FREEJUMP:
+                case DogState.MOVE | DogState.MOVING | DogState.AI_AGILE | DogState.AI_FREEAVOID | DogState.AI_FREEBOUND | DogState.AI_WALKSTAIR | DogState.AI_FREEJUMP | DogState.AI_WALKUPRIGHT | DogState.AI_CROSSSTEP:
                     cmd = Move(
                         x = round(joystick_status["Axis 1"]\
                             * joystick_handler.sensitivity["vxy"], 2),
@@ -77,7 +77,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         z = round(joystick_status["Axis 2"]\
                             * joystick_handler.sensitivity["vyaw"], 2)
                     )
-                case DogMode.STANDING:
+                case DogState.STANDING:
                     cmd = Euler(
                         roll = round(joystick_status["Axis 0"]\
                             * joystick_handler.sensitivity["roll"], 2),
@@ -113,7 +113,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                     # TODO 
                     # Check dogstate for Pose or other toggle commands
                     # Is there anything reflecting those?
-                    # case DogMode.MOVE | DogMode.MOVING | DogMode.AI:
+                    # case DogState.MOVE | DogState.MOVING | DogState.AI:
 
                         if cmd_class.__name__ in CMD_W_DATA:
                             cmd = cmd_class(True)

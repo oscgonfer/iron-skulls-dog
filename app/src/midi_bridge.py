@@ -11,7 +11,7 @@ from go2_webrtc_driver.constants import *
 from apc_mk2_handler import APCMK2Handler
 from apc_mk2_config import *
 from mqtt_handler import MQTTHandler
-from dog import DogMode
+from dog import DogState
 import subprocess
 
 # TODO
@@ -36,18 +36,18 @@ import subprocess
 
 async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
+    dog_mode = None
+
+    cmd = GetMotionSwitcherStatus()
+    outgoing_topic = SPORT_TOPIC
 
     while True:
-        cmd = None
+        
         # Get status of midi
         midi_values = midi_handler.status.copy()
         midi_handler.reset_triggers()
         
         try:
-            # TODO Get state from dog (moving, not moving)
-            # Get ai / not ai
-            # Get capture status
-            # Find a way to capture here when a command is running
             source, data = queue.get_nowait()
         except asyncio.QueueEmpty:
             pass
@@ -62,19 +62,37 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                     try:
                         _dog_state = payload['LF_SPORT_MOD_STATE']['mode']
                     except:
-                        std_out('Payload doesnt contain dog mode')
+                        std_out('Payload doesnt contain dog state')
                         pass
                     else:
                         dog_state = _dog_state
-
+                        midi_handler.update_dog_state(dog_state)
+            if MODE_TOPIC in source:
+                try:
+                    payload = json.loads(data)
+                except json.decoder.JSONDecodeError:
+                    std_out('Malformed payload. Ignoring')
+                    pass
+                else:
+                    try:
+                        _dog_mode = payload
+                    except:
+                        std_out('Payload doesnt contain dog mode')
+                        pass
+                    else:
+                        dog_mode = _dog_mode                
+                        midi_handler.update_dog_mode(dog_mode)
+        
         # If something happened...
         if any([midi_values[item]['trigger'] for item in midi_values]):
             # std_out(f"{[(midi_values[item]['name'], midi_values[item]['input_state'], midi_values[item]['trigger']) for item in midi_values]}")
 
             for midi_item in midi_values:
                 _mi = midi_values[midi_item]
+
                 if _mi['trigger']:
                     action = _mi["action"]
+
                     # Dog commands go here
                     if action.type == APCMK2ActionType.command and action.command is not None:
                         if 'FADER' in str(_mi['name']):
@@ -82,22 +100,31 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                             value_range = APC_MK2_FADER_LIMITS)
                         else:
                             if _mi['input_state']:
-                                # TODO Check status here? (AI vs not AI)
                                 # TODO Commands with data... what to do with it?
                                 cmd = action.command()
+
+                                if cmd.toggle:
+                                    print ('Toggle command!')
+                                    if cmd.associated_modes is not None:
+                                        if dog_state == cmd.associated_modes:
+                                            cmd = action.command(False)
+                                else:
+                                    print ('non toggle command!')
                         
                         outgoing_topic = action.payload
                     # Dog mode toggles go here
                     elif action.type == APCMK2ActionType.dog_mode_toggle and action.command is not None:
                         if _mi['input_state']:
-                            # TODO Check status here? (AI vs not AI)
                             cmd = action.command()
+
                         outgoing_topic = action.payload
+
                     # Capture commands go here
                     elif action.type == APCMK2ActionType.capture:
                         if _mi['input_state']:
                             cmd = action.command # Capture commands are not callable
                         outgoing_topic = action.payload
+
                     # Subprocess commands go here
                     elif action.type == APCMK2ActionType.subprocess:
                         if _mi['input_state']:
@@ -141,12 +168,14 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                 print ()
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
+        cmd = None
 
 async def start_bridge(mqtt_handler = None, midi_handler = None):
     queue = asyncio.Queue()
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(mqtt_handler.bridge_incomming(topic=STATE_FILTER, queue=queue))
+        tg.create_task(mqtt_handler.bridge_incomming(topic=MODE_FILTER, queue=queue))
         tg.create_task(mqtt_handler.bridge_incomming(topic=CAPTURE_FILTER, queue=queue))
         tg.create_task(midi_bridge(midi_handler=midi_handler, queue=queue, mqtt_handler = mqtt_handler))
 

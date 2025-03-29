@@ -9,22 +9,26 @@ from go2_webrtc_driver.constants import *
 
 from enum import IntEnum
 
-# TODO Finish modes
-class DogMode(IntEnum):
+# TODO Finish modes?
+class DogState(IntEnum):
+    BUSY=0
     MOVE=1 # Accepts any move command except Euler. Run, stair 1 and 2, walk, endurance
     STANDING=2 # Accepts Euler
     MOVING=3 # Moving with any of run, stair 1 and 2, walk, endurance
     PRONE=5 # Down
     LOCKED=6 # Posture locked, can only go prone
-    SAVE=7 # Seems to enter after a bit into this
-    # TODO Mode advanced?
-    AI_AGILE=9 # TODO - what happens here, just AI?
+    SAVE=7 # Seems to enter after a bit into this when prone
+    SIT=10 # Seems only this mode on sitting mode
+    JUMP=12 
+    POUNCE=13
+    AI_AGILE=9
     AI_FREEBOUND=15
     AI_FREEJUMP=16
     AI_FREEAVOID=17
     AI_WALKSTAIR=18
+    AI_WALKUPRIGHT=19
+    AI_CROSSSTEP=20
 
-# TODO Make this stateful
 class Dog:
     def __init__(self, conn=None, dry_run=False, broadcast=False, mqtt_handler=None):
         # State
@@ -115,6 +119,13 @@ class Dog:
         if self.broadcast:
             await self.mqtt_handler.publish(topic=f'{STATE_TOPIC}/{channel}', \
                 payload=json.dumps(self.state))
+        
+            await self.publish_mode()
+    
+    async def publish_mode(self):
+        if self.broadcast:
+            await self.mqtt_handler.publish(topic=f'{MODE_TOPIC}/mode', \
+                payload=json.dumps(self.motion_switcher))
 
     def lowstate_callback(self, message):
         current_message = message['data']

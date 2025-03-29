@@ -11,9 +11,10 @@ from config import *
 
 # Extras
 from tools import *
+from command import *
 from dog import Dog
 from command_handler import CommandHandler
-from command import *
+
 from mqtt_handler import MQTTHandler
 
 # GO2 WEBRTC DRIVER
