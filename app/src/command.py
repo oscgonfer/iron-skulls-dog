@@ -12,21 +12,19 @@ class Command:
         self.additional_wait = payload["additional_wait"] if "additional_wait" in payload else 0
 
     def as_dict(self):
-        return {
-            'topic': self.topic,
-            'options': self.options,
-            'expect_reply': self.expect_reply,
-            'update_switcher_mode': self.update_switcher_mode,
-            'post_hook': self.post_hook.as_dict() if self.post_hook is not None else None,
-            'additional_wait': self.additional_wait,
-        }
+        if self.post_hook is None:
+            post_hook = None
+        elif type(self.post_hook)==dict:
+            post_hook = self.post_hook
+        else:
+            post_hook = self.post_hook.as_dict()
 
-    def as_dict_reduced(self):
         return {
             'topic': self.topic,
             'options': self.options,
             'expect_reply': self.expect_reply,
             'update_switcher_mode': self.update_switcher_mode,
+            'post_hook': post_hook,
             'additional_wait': self.additional_wait,
         }
 

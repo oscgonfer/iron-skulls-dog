@@ -60,7 +60,7 @@ class Capture:
                     'seconds': timedelta.seconds,
                     'microseconds': timedelta.microseconds
                     },
-                'command': command.to_json(reduced=True),
+                'command': command.to_json(),
                 'mqtt_topic': topic
             }
         )
