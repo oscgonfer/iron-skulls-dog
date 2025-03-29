@@ -28,8 +28,7 @@ class Command:
             'additional_wait': self.additional_wait,
         }
 
-    def to_json(self, reduced = False):
-        if reduced: return json.dumps(self.as_dict_reduced())
+    def to_json(self):
         return json.dumps(self.as_dict())
 
 # 1001
