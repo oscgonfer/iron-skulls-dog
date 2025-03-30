@@ -5,7 +5,7 @@ from os.path import isfile, join, dirname, realpath, splitext
 
 # Here the pads are numbered from 0 to 31 (both inclusive)
 # Add a line to make a new command
-# TODO Make this with pages -> so that it depends on the Dogmode (ai, advanced, normal)
+# TODO Make this with pages? -> so that it depends on the DogMode (ai, advanced, normal)
 pad_commands ={
     # First row - 0-7
     0: [FreeWalk, SPORT_TOPIC],

@@ -9,25 +9,30 @@ from go2_webrtc_driver.constants import *
 
 from enum import IntEnum
 
-# TODO Finish modes?
+# TODO Are there more modes?
 class DogState(IntEnum):
-    BUSY=0
+    BUSY=0 # Working on something. Maybe dancing, saying hello...
     MOVE=1 # Accepts any move command except Euler. Run, stair 1 and 2, walk, endurance
     STANDING=2 # Accepts Euler
     MOVING=3 # Moving with any of run, stair 1 and 2, walk, endurance
     PRONE=5 # Down
     LOCKED=6 # Posture locked, can only go prone
     SAVE=7 # Seems to enter after a bit into this when prone
-    SIT=10 # Seems only this mode on sitting mode
-    JUMP=12 
-    POUNCE=13
-    AI_AGILE=9
-    AI_FREEBOUND=15
-    AI_FREEJUMP=16
-    AI_FREEAVOID=17
-    AI_WALKSTAIR=18
-    AI_WALKUPRIGHT=19
-    AI_CROSSSTEP=20
+    SIT=10 # Seems only in this mode when sitting only
+    JUMP=12 # Seems only to be in this mode when jumping only
+    POUNCE=13 # Seems only to be in this mode when pouncing only
+    AI_AGILE=9 # AI Agile mode
+    AI_FREEBOUND=15 # AI FreeBound mode
+    AI_FREEJUMP=16 # AI FreeJump mode
+    AI_FREEAVOID=17 # AI FreeAvoid mode
+    AI_WALKSTAIR=18 # AI WalkStair mode
+    AI_WALKUPRIGHT=19 # AI WalkUpRight mode
+    AI_CROSSSTEP=20 # AI CrossStep mode
+
+class DogMode(IntEnum):
+    NORMAL=0
+    ADVANCED=1
+    AI=2
 
 class Dog:
     def __init__(self, conn=None, dry_run=False, broadcast=False, mqtt_handler=None):

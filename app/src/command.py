@@ -1,16 +1,20 @@
 import json
 from go2_webrtc_driver.constants import *
 from tools import map_range
+from dog import DogMode, DogState
 
 class Command:
-    def __init__(self, payload, associated_modes: int = None, toggle = False):
+    def __init__(self, payload, associated_modes= None, associated_states = None, toggle = False):
+        # Exportable
         self.topic = payload["topic"]
         self.options = payload["options"]
         self.expect_reply = payload["expect_reply"] if "expect_reply" in payload else False
         self.update_switcher_mode = payload["update_switcher_mode"] if "update_switcher_mode" in payload else False
         self.post_hook = payload["post_hook"] if "post_hook" in payload else None
         self.additional_wait = payload["additional_wait"] if "additional_wait" in payload else 0
+        # Internal only
         self.associated_modes = associated_modes
+        self.associated_states = associated_states
         self.toggle = toggle
 
     def as_dict(self):
@@ -75,7 +79,7 @@ class BalanceStand(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[1])
+        super().__init__(payload, associated_states=[DogState.MOVE])
 
 # 1003
 class StopMove(Command):
@@ -117,7 +121,7 @@ class StandUp(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[6])
+        super().__init__(payload, associated_states=[DogState.LOCKED])
 
 # 1005
 class StandDown(Command):
@@ -137,7 +141,7 @@ class StandDown(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[5, 7])
+        super().__init__(payload, associated_states=[DogState.PRONE, DogState.SAVE])
 
 # 1006
 class RecoveryStand(Command):
@@ -221,7 +225,7 @@ class Sit(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[10])
+        super().__init__(payload, associated_states=[DogState.SIT])
 
 # 1010
 class RiseSit(Command):
@@ -372,7 +376,7 @@ class Hello(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1017
 class Stretch(Command):
@@ -388,7 +392,7 @@ class Stretch(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 SPORT_PATH_POINT_SIZE = 30
 # 1018
@@ -463,7 +467,7 @@ class Content(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1021
 class Wallow(Command):
@@ -479,7 +483,7 @@ class Wallow(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1022
 class Dance1(Command):
@@ -495,7 +499,7 @@ class Dance1(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1023
 class Dance2(Command):
@@ -511,7 +515,7 @@ class Dance2(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1024
 class GetBodyHeight(Command):
@@ -607,7 +611,7 @@ class Scrape(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1030
 class FrontFlip(Command):
@@ -639,7 +643,7 @@ class FrontJump(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[12])
+        super().__init__(payload, associated_states=[DogState.JUMP])
 
 # 1032
 class FrontPounce(Command):
@@ -655,7 +659,7 @@ class FrontPounce(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[13])
+        super().__init__(payload, associated_states=[DogState.POUNCE])
 
 # 1033
 class WiggleHips(Command):
@@ -671,7 +675,7 @@ class WiggleHips(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1035
 class EconomicGait(Command):
@@ -703,7 +707,7 @@ class Heart(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[0])
+        super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1037
 # NOT AVAILABLE
@@ -737,7 +741,7 @@ class StandOut(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes = [3], toggle=True)
+        super().__init__(payload, associated_states = [DogState.MOVING], toggle=True)
 
 # 1042
 class LeftFlip(Command):
@@ -801,7 +805,7 @@ class FreeWalk(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[9])
+        super().__init__(payload, associated_states=[DogState.AI_AGILE])
 
 # 1046
 class FreeBound(Command):
@@ -817,7 +821,7 @@ class FreeBound(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[15], toggle=True)
+        super().__init__(payload, associated_states=[DogState.AI_FREEBOUND], toggle=True)
 
 # 1047
 class FreeJump(Command):
@@ -833,7 +837,7 @@ class FreeJump(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[16], toggle=True)
+        super().__init__(payload, associated_states=[DogState.AI_FREEJUMP], toggle=True)
 
 # 1048
 class FreeAvoid(Command):
@@ -849,7 +853,7 @@ class FreeAvoid(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[17], toggle=True)
+        super().__init__(payload, associated_states=[DogState.AI_FREEAVOID], toggle=True)
 
 # 1049
 class WalkStair(Command):
@@ -865,7 +869,7 @@ class WalkStair(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[18], toggle=True)
+        super().__init__(payload, associated_states=[DogState.AI_WALKSTAIR], toggle=True)
 
 # 1050 - Standup
 class WalkUpright(Command):
@@ -881,7 +885,7 @@ class WalkUpright(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[19], toggle=True)
+        super().__init__(payload, associated_states=[DogState.AI_WALKUPRIGHT], toggle=True)
 
 # 1051
 # CrossWalk (crosstep before)
@@ -898,7 +902,7 @@ class CrossWalk(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_modes=[20], toggle=True)
+        super().__init__(payload, associated_states=[DogState.AI_CROSSSTEP], toggle=True)
 
 # 1303
 class OneSidedStep(Command):

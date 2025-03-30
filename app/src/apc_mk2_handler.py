@@ -27,8 +27,8 @@ class APCMK2Handler(StateMachine):
 
     _status = {}
 
-    _dog_mode = None
-    _dog_state = None
+    _dog_mode = None # DogMode in dog.py Normal, Advance, AI
+    _dog_state = None # DogState in dog.py
 
     def __init__(self, port=MIDI_PORT_NAME):
         self.port = port
@@ -102,17 +102,11 @@ class APCMK2Handler(StateMachine):
         self.midi_out.close_port()
 
     def update_dog_mode(self, mode):
+        # Updates mode mode (Normal, Advanced, AI)
         if mode == 'null': self._dog_mode = None
         else: self._dog_mode = mode
 
-        self.update_dog_mode_toggles()
-    
-    def update_dog_state(self, state):
-        self._dog_state = state
-
-        self.update_dog_state_toggles()
-
-    def update_dog_mode_toggles(self):
+        # TODO Associate available pads with DogMode?
         for button in self.buttons.values():
             if button.action.type == APCMK2ActionType.dog_mode_toggle:
                 if self._dog_mode is not None:
@@ -122,15 +116,21 @@ class APCMK2Handler(StateMachine):
                         self.buttons[button.channel].release()
                     self.light_button(button=button)
 
-    def update_dog_state_toggles(self):
+    def update_dog_state(self, state):
+        # Updates value of DogState
+        self._dog_state = state
+
         if self._dog_state == None: return
+        
         for pad in self.pads.values():
             if pad.action.type == APCMK2ActionType.command:
+
                 if pad.action.command is None: continue
                 pad_cmd=pad.action.command()
-                if pad_cmd.associated_modes is None: continue
 
-                if any([self._dog_state == cmd_assoc_mode for cmd_assoc_mode in pad_cmd.associated_modes]):
+                if pad_cmd.associated_states is None: continue
+
+                if any([self._dog_state == cmd_assoc_state.value for cmd_assoc_state in pad_cmd.associated_states]):
                     self.pads[pad.channel].press()
                 else:
                     self.pads[pad.channel].release()
