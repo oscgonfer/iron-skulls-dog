@@ -60,7 +60,7 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                     pass
                 else:
                     try:
-                        _dog_state = payload['LF_SPORT_MOD_STATE']['mode']
+                        _dog_state = payload['LF_SPORT_MOD_STATE']['mode'] # LF_SPORT_MODE STATE
                     except:
                         std_out('Payload doesnt contain dog state')
                         pass
@@ -100,16 +100,17 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                             value_range = APC_MK2_FADER_LIMITS)
                         else:
                             if _mi['input_state']:
-                                # TODO Commands with data... what to do with it?
                                 cmd = action.command()
 
                                 if cmd.toggle:
                                     print ('Toggle command!')
-                                    if cmd.associated_modes is not None:
-                                        if dog_state == cmd.associated_modes:
+                                    if cmd.associated_states is not None:
+                                        # TODO This can't be working... should check for list
+                                        # if dog_state == cmd.associated_states:
+                                        if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
                                             cmd = action.command(False)
                                 else:
-                                    print ('non toggle command!')
+                                    print ('non-toggle command!')
                         
                         outgoing_topic = action.payload
                     # Dog mode toggles go here
@@ -156,7 +157,8 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                                 std_out (f'PREVIEW CAPTURE: {action.payload}', priority = True, timestamp = False)
                                 std_out (f"\n\tName: {capture['metadata']['short_name']}", priority = True, timestamp = False)
                                 std_out (f"\n\tDescription: {capture['metadata']['description']}\n", priority = True, timestamp = False)
-
+                                if 'track' in capture['metadata']:
+                                    std_out (f"\tTrack file: {capture['metadata']['track']['path']}\n", priority = True, timestamp = False)
         if cmd is not None:
             if midi_handler.current_state.id != 'preview':
                 std_out (f'Command: {cmd.as_dict()}')
@@ -166,6 +168,7 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                 print ()
                 std_out (f'{action.command.__doc__}', priority = True, timestamp = False)
                 print ()
+        
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
         cmd = None

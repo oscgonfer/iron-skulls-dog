@@ -7,12 +7,30 @@ from config import *
 from tools import *
 from command import *
 import datetime
+from media_track import Track
+import os
 
 async def main():
 
     start_time = datetime.datetime.now()
+    if 'track' in capture['metadata']:
+        track_path = capture['metadata']['track']['path']
+        if track_path is not None:
+            start_at = capture['metadata']['track']['start_at']
+            end_at = capture['metadata']['track']['end_at']
+
+            if os.path.exists(track_path):
+                track = Track(path = track_path, start_at = start_at, end_at = end_at)
+                if track is not None:
+                    track.play()
+                else:
+                    std_out('Track couldnt be loaded')
+            else:
+                std_out('Track doesnt exist')
+
     for item in capture['commands']:
         timestamp = datetime.timedelta(seconds = item["timestamp"]["seconds"], microseconds=item["timestamp"]["microseconds"])
+
         cmd = Command(json.loads(item["command"]))
         topic = item["mqtt_topic"]
         

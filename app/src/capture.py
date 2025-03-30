@@ -7,6 +7,7 @@ from enum import Enum
 import os
 import json
 import shutil
+from media_track import Track
 
 class CaptureStatus(Enum):
     null = 0
@@ -20,25 +21,31 @@ class CaptureAction(Enum):
     PAUSE = 1
     STOP = 2
     STORE = 3
-    DISCARD = 4
+    DISCARD = 4 # TODO Add something to discard the recording?
 
 class Capture:
-    def __init__(self, name, short_name = '', description = ''):
+    def __init__(self, name, short_name = '', description = '', start_at = None, end_at = None, track: Track = Track()):
         self.name = name
         self.short_name = short_name
         self.description = description
         self.filename = f'{name}.cap'
-        self.start_time = None
-        self.end_time = None
+        self.start_time = None # In ms
+        self.end_time = None # In ms
+        self.start_at = start_at
+        self.end_at = end_at
         self.status: CaptureStatus = CaptureStatus.null
-        self.metadata = {
-            'short_name': self.short_name,
-            'filename': self.filename,
-            'description': self.description
-        }
+
         self.commands = []
         file_path = os.path.dirname(os.path.realpath(__file__))
         self.file = os.path.abspath(os.path.join(file_path, CAPTURE_PATH, self.filename))
+        self.track = track
+
+        self.metadata = {
+            'short_name': self.short_name,
+            'filename': self.filename,
+            'description': self.description,
+            'track': self.track.as_dict()
+        }
 
     def start(self):
         payload = {
@@ -52,7 +59,7 @@ class Capture:
 
     def add(self, command, topic):
         if self.status != CaptureStatus.running: return
-        timedelta = datetime.datetime.now()-self.start_time
+        timedelta = datetime.datetime.now() - self.start_time
 
         self.commands.append(
             {
@@ -80,6 +87,7 @@ class Capture:
         if self.status != CaptureStatus.stopped: 
             std_out('Need to stop capture first')
             return
+        
         # TODO Make backup in case it exists
         if os.path.exists(self.file):
             std_out('File exists, moving to _backup/')
