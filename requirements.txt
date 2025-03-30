@@ -6,3 +6,5 @@ python-rtmidi
 # go2_webrtc_driver
 PySide6
 python-statemachine
+python-vlc
+lz4
