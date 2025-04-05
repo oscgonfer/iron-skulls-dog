@@ -75,6 +75,10 @@ class JsonEditorApp(QWidget):
                         edit_field = QLineEdit(value)
                         edit_field.setObjectName(key)
                         self.form_layout.addRow(QLabel(key), edit_field)
+                    elif isinstance(value, int):  # Text field
+                        edit_field = QLineEdit(json.dumps(value))
+                        edit_field.setObjectName(key)
+                        self.form_layout.addRow(QLabel(key), edit_field)
                     elif isinstance(value, dict):  # If it's a dictionary, add a nested field
                         if key == 'track':
                             title_label = QLabel("Music Track")
@@ -154,10 +158,10 @@ class JsonEditorApp(QWidget):
                 
                 if isinstance(field_widget, QLineEdit) or isinstance(field_widget, QFileDialog):
                     value = field_widget.text()
-                    if value.isdigit(): value = int(value)
+                    if value.lstrip('-').isdigit(): value = int(value)
                 elif isinstance(field_widget, QCheckBox):
                     value = field_widget.isChecked()
-                print (key, value)
+                print (key, value, type(value))
 
                 if '-' in key:
                     _key=key.split('-')[0]
