@@ -71,11 +71,34 @@ class APCMK2Handler(StateMachine):
         self.locked = False
 
     def on_enter_state(self, event, state):
+        if state not in ['normal', 'recording']:
+            self.assign_recordings()
         self.assign_pads()
         # Buttons don't change?
         self.assign_buttons()
         self.update_lights()
 
+    def assign_recordings(self):
+        cap_files = get_cap_files()
+        for item in range(APC_MK2_NUM_PADS):
+            if item <APC_MK2_NUM_PADS/2: continue
+            if item in cap_files:
+                self.action_map["normal"]["pads"][item] = APCMK2Action(command='play', payload=item, atype=APCMK2ActionType.subprocess)
+
+                self.action_map["preview"]["pads"][item] = APCMK2Action(command='preview', payload=item, atype=APCMK2ActionType.subprocess)
+
+                self.action_map["record"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+
+                self.action_map["recording"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+            else: 
+                self.action_map["normal"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+
+                self.action_map["preview"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+
+                self.action_map["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+
+                self.action_map["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+    
     def assign_pads(self):
         for item in range(APC_MK2_NUM_PADS):
             if item not in self.action_map[self.current_state.id]["pads"]: continue

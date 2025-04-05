@@ -2,8 +2,10 @@ from enum import Enum
 from config import *
 from command import *
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON, CONTROLLER_CHANGE
-from midi_map import pad_commands, cap_files
+from midi_map import pad_commands
 from capture import CaptureCommand, CaptureAction
+from os import listdir
+from os.path import isfile, join, dirname, realpath, splitext
 
 MIDI_PORT_NAME = 'APC mini mk2:APC mini mk2 APC mini mk2 Contr 20:0'
 APC_MK2_NUM_PADS = 64
@@ -190,6 +192,14 @@ class APCMK2Fader(APCMK2Input):
             'input_state': self.input_state,
             'trigger': self.trigger
         }
+
+def get_cap_files():
+    file_path = dirname(realpath(__file__))
+    capture_path = join(file_path, CAPTURE_PATH)
+
+    cap_files = [int(splitext(f)[0]) for f in listdir(capture_path) if isfile(join(capture_path, f)) and splitext(f)[1] == '.cap' and splitext(f)[0].isdigit()]
+
+    return cap_files
 
 COLOR_EFFECT_MAP = {
     "pads": {
@@ -456,6 +466,8 @@ ACTION_MAP = {
         }
     }
 }
+
+cap_files = get_cap_files()
 
 for item in range(APC_MK2_NUM_PADS):
     if item in pad_commands:
