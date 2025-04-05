@@ -14,6 +14,7 @@ class Track():
         self.end_at = end_at # In ms
         # self.loop = loop
         self.media = None
+        self._duration = -1
         
         if self.path is not None:
             try:
@@ -62,10 +63,10 @@ class Track():
 
         return {
             'path': self.path,
-            'duration': self.duration,
+            # 'duration': self.duration,
             'start_at': self.start_at if self.start_at is not None else 0,
             'end_at': self.end_at if self.end_at is not None else self.duration,
-            'loop': self.loop
+            # 'loop': self.loop
         }
     
     def to_json(self):
