@@ -12,7 +12,7 @@ import os
 
 async def main():
 
-    start_time = datetime.datetime.now()
+    cstart = 0
     if 'track' in capture['metadata']:
         track_path = capture['metadata']['track']['path']
         if track_path is not None:
@@ -28,12 +28,19 @@ async def main():
             else:
                 std_out('Track doesnt exist')
 
+    start_time = datetime.datetime.now()
+    # Discarded the start_at because feels dangerous to cut commands halfway
+    # if 'start_at' in capture['metadata']:
+    #     cstart = capture['metadata']['start_at']
+    # print (cstart)
     for item in capture['commands']:
         timestamp = datetime.timedelta(seconds = item["timestamp"]["seconds"], microseconds=item["timestamp"]["microseconds"])
+        # print (timestamp.total_seconds()*1000)
+        # print (item)
+        # if timestamp.total_seconds()*1000<cstart: print ('skip'); continue
 
         cmd = Command(json.loads(item["command"]))
         topic = item["mqtt_topic"]
-        
         while not datetime.datetime.now()-start_time > timestamp:
             time.sleep(0.001)
 

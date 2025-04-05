@@ -24,7 +24,7 @@ class CaptureAction(Enum):
     DISCARD = 4 # TODO Add something to discard the recording?
 
 class Capture:
-    def __init__(self, name, short_name = '', description = '', start_at = None, end_at = None, track: Track = Track()):
+    def __init__(self, name, short_name = '', description = '', start_at = 0, track: Track = Track()):
         self.name = name
         self.short_name = short_name
         self.description = description
@@ -32,7 +32,6 @@ class Capture:
         self.start_time = None # In ms
         self.end_time = None # In ms
         self.start_at = start_at
-        self.end_at = end_at
         self.status: CaptureStatus = CaptureStatus.null
 
         self.commands = []
@@ -44,6 +43,7 @@ class Capture:
             'short_name': self.short_name,
             'filename': self.filename,
             'description': self.description,
+            # 'start_at': self.start_at, #dangerous
             'track': self.track.as_dict()
         }
 
