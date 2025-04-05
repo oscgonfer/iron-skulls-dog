@@ -397,7 +397,8 @@ ACTION_MAP = {
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.record, atype=APCMK2ActionType.apc_mode_change),
             "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
-            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
+            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "STOP_ALL": APCMK2Action(command=StopMove, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
@@ -415,7 +416,8 @@ ACTION_MAP = {
             "SEND": APCMK2Action(command=SetMotionSwitcherAI, payload=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
-            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
+            "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "STOP_ALL": APCMK2Action(command=StopMove, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
@@ -435,6 +437,7 @@ ACTION_MAP = {
             "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.normal, atype=APCMK2ActionType.apc_mode_change),
             "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "STOP_ALL": APCMK2Action(command=StopMove, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
@@ -453,6 +456,7 @@ ACTION_MAP = {
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "UP": APCMK2Action(command=SpeedLevelHigh, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, payload=SPORT_TOPIC, atype=APCMK2ActionType.command),
+            "STOP_ALL": APCMK2Action(command=StopMove, payload=SPORT_TOPIC, atype=APCMK2ActionType.command)
             # TODO Make something to discard recordings?
             # "CLIP_STOP": APCMK2Action(command=CaptureCommand(action=CaptureAction.DISCARD, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
         },
@@ -508,6 +512,5 @@ for item in range(APC_MK2_NUM_PADS):
             ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
 
             ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
-
 
 
