@@ -7,27 +7,11 @@ from config import *
 from tools import *
 from command import *
 import datetime
-from media_track import Track
 import os
 
 async def main():
 
-    cstart = 0
-    if 'track' in capture['metadata']:
-        track_path = capture['metadata']['track']['path']
-        if track_path is not None:
-            start_at = capture['metadata']['track']['start_at']
-            end_at = capture['metadata']['track']['end_at']
-
-            if os.path.exists(track_path):
-                track = Track(path = track_path, start_at = start_at, end_at = end_at)
-                if track is not None:
-                    track.play()
-                else:
-                    std_out('Track couldnt be loaded')
-            else:
-                std_out('Track doesnt exist')
-
+    # cstart = 0
     start_time = datetime.datetime.now()
     # Discarded the start_at because feels dangerous to cut commands halfway
     # if 'start_at' in capture['metadata']:
@@ -35,6 +19,7 @@ async def main():
     # print (cstart)
     for item in capture['commands']:
         timestamp = datetime.timedelta(seconds = item["timestamp"]["seconds"], microseconds=item["timestamp"]["microseconds"])
+
         # print (timestamp.total_seconds()*1000)
         # print (item)
         # if timestamp.total_seconds()*1000<cstart: print ('skip'); continue
@@ -45,6 +30,9 @@ async def main():
             time.sleep(0.001)
 
         await mqtt_handler.publish(topic=topic, payload=cmd.to_json())
+    
+    # TODO
+    # Keep playing the track until it's done no matter the commands
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -11,8 +11,8 @@ from config import *
 
 # Extras
 from tools import *
-from command import *
 from dog import Dog
+from command import *
 from command_handler import CommandHandler
 
 from mqtt_handler import MQTTHandler
