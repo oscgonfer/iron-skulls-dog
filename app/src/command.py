@@ -608,7 +608,7 @@ class SwitchJoystick(Command):
 
 # 1028
 class Pose(Command):
-    def __init__(self, flag: bool):
+    def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
@@ -620,7 +620,7 @@ class Pose(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_states=[DogState.STANDING], toggle = True)
 
 # 1029
 class Scrape(Command):
