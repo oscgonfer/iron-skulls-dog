@@ -1138,6 +1138,37 @@ class SetVolume(Command):
         }
         super().__init__(payload)
 
+## Obstacle avoidance
+class GetObstacleAvoidance(Command):
+    def __init__(self, flag: bool = False):
+        payload = {
+            "topic": RTC_TOPIC["OBSTACLES_AVOID"],
+            "options": {
+                "parameter": "",
+                "api_id": 1002
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload, toggle=True)
+        
+class SetObstacleAvoidance(Command):
+    def __init__(self, flag: bool = False):
+        payload = {
+            "topic": RTC_TOPIC["OBSTACLES_AVOID"],
+            "options": {
+                "parameter": {"data": flag},
+                "api_id": 1001
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload, toggle=True)
+
 CMD_W_DATA = [
     'Pose',
 ]

@@ -33,6 +33,9 @@ SWITCHER_TOPIC = SWITCHER_FILTER.replace("/#","")
 VUI_FILTER = f"{DOG_FILTER}/vui/#"
 VUI_TOPIC = VUI_FILTER.replace("/#","")
 
+AVOIDANCE_FILTER = f"{CMD_FILTER}/avoidance/#"
+AVOIDANCE_TOPIC = AVOIDANCE_FILTER.replace("/#","")
+
 CAPTURE_FILTER = f"{CMD_FILTER}/capture/#"
 CAPTURE_TOPIC = CAPTURE_FILTER.replace("/#","")
 
@@ -44,7 +47,8 @@ INCOMING_TOPICS = {
     MOVE_TOPIC: 'sync',
     SWITCHER_TOPIC: 'async',
     CAPTURE_TOPIC: 'capture',
-    VUI_TOPIC: 'sync'
+    VUI_TOPIC: 'sync',
+    AVOIDANCE_TOPIC: 'async'
 }
 
 ## Outgoing topics
