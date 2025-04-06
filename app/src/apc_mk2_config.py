@@ -403,8 +403,8 @@ ACTION_MAP = {
         "pads": {
         },
         "faders": {
-            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_1": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
         }
@@ -422,8 +422,8 @@ ACTION_MAP = {
         "pads": {
         },
         "faders": {
-            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_1": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
         }
@@ -442,8 +442,8 @@ ACTION_MAP = {
         "pads": {
         },
         "faders": {
-            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_1": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
         }
@@ -463,8 +463,8 @@ ACTION_MAP = {
         "pads": {
         },
         "faders": {
-            "FADER_1": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_2": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_1": APCMK2Action(command=SetVolume, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
+            "FADER_2": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
         }
