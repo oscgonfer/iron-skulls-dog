@@ -18,6 +18,7 @@ class Track():
         
         if self.path is not None:
             try:
+
                 self.media_player = vlc.MediaPlayer()
                 self.media = vlc.Media(self.path)
                 self.media_player.set_media(self.media)
@@ -38,6 +39,10 @@ class Track():
         
         if self.media is None:
             return None
+
+    @property
+    def is_playing(self):
+        return self.media_player.is_playing()
 
     @property
     def duration(self):
