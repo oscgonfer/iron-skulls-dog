@@ -51,7 +51,6 @@ class APCMK2Handler(StateMachine):
 
         self.target_pad = None
         self.locked = False
-        
 
     def on_transition(self,event_data, event: Event):
         assert event_data.event == event
@@ -109,7 +108,7 @@ class APCMK2Handler(StateMachine):
 
     def assign_buttons(self):
         for item in APCMK2ButtonName:
-            if item.name not in self.action_map[self.current_state.id]["buttons"]: continue 
+            if item.name not in self.action_map[self.current_state.id]["buttons"]: continue
             action = self.action_map[self.current_state.id]["buttons"][item.name]
             _map = COLOR_EFFECT_MAP["buttons"][self.current_state.id][action.type.name]
             self.buttons[item.value] = APCMK2Button(item.value, item.name, action = action, map = _map)
@@ -157,7 +156,7 @@ class APCMK2Handler(StateMachine):
                     self.pads[pad.channel].press()
                 else:
                     self.pads[pad.channel].release()
-        
+            
         self.update_lights()
             
     def update_lights(self):
@@ -202,7 +201,6 @@ class APCMK2Handler(StateMachine):
 
         else:
             if action.type == APCMK2ActionType.capture:
-                print ('Requested capture')
                 if note == NOTE_OFF and channel == self.target_pad and self.current_state.id == 'record':
                     self.send('ev_recording')
                     # We press here to make the impression we are still recording
