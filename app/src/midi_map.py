@@ -16,17 +16,15 @@ pad_commands ={
     6: [StandOut, SPORT_TOPIC],
     7: [RecoveryStand, SPORT_TOPIC],
     # Second row - 8-15
-
+    8: [Damp, SPORT_TOPIC],
+    9: [Wallow, SPORT_TOPIC],
+    14: [SetObstacleAvoidance, AVOIDANCE_TOPIC],
     # Third row - 16-23
     16: [Dance1, SPORT_TOPIC],
     17: [Heart, SPORT_TOPIC],
     # Fourth row - 24-31
     24: [BalanceStand, SPORT_TOPIC],
     25: [StandUp, SPORT_TOPIC],
-    26: [StandDown, SPORT_TOPIC]
+    26: [StandDown, SPORT_TOPIC],
+    27: [Pose, SPORT_TOPIC]
 }
-
-# file_path = dirname(realpath(__file__))
-# capture_path = join(file_path, CAPTURE_PATH)
-
-# cap_files = [int(splitext(f)[0]) for f in listdir(capture_path) if isfile(join(capture_path, f)) and splitext(f)[1] == '.cap' and splitext(f)[0].isdigit()]

@@ -14,11 +14,10 @@ from mqtt_handler import MQTTHandler
 from subprocess_run import subprocess_run
 from media_track import Track
 import time
-# import subprocess
 
-# TODO
+# (DONE)
 # --------
-# Captures (DONE)
+# Captures
 # --------
 # Interface for editing
 # name and description
@@ -27,29 +26,37 @@ import time
 # show name and description for captures on preview
 # Not lock if there is no command
 
+# TODO
 # -----
 # Music
 # -----
 # drum - pipe to synth (intro)
 # include all sensors
 
+# TODO
 # -----
 # Modes
 # -----
 # Change mapping of limits on each command based on the ai mode
 # Change commands available on each mode?
 
+# TOTEST
 # -----
 # ObstacleAvoidance (TO TEST)
 # -----
 # Command
 
+# TODO
 # -----
 # Led color 
 # -----
 # Change color on the arrows
 
+# TODO
 # Interfaz para batería y carga
+
+# TODO
+# Play sounds from the dog itself
 
 async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
     dog_state = None

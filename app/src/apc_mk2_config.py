@@ -111,6 +111,7 @@ class APCMK2ActionType(Enum):
 class APCMK2ActionStatus(Enum):
     idle = 0
     running = 1
+    disabled = 2
 
 class APCMK2Action():
     def __init__(self, command, payload, atype, on = NOTE_ON):
@@ -207,76 +208,93 @@ COLOR_EFFECT_MAP = {
             "null": {
                 "idle": {"color": APCMK2PadColor.LAVENDER, "effect": APCMK2PadEffect.ON_10},
                 "running": {"color": APCMK2PadColor.LAVENDER, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "subprocess": {
                 "idle": {"color": APCMK2PadColor.GREEN, "effect": APCMK2PadEffect.ON_50},
                 "running": {"color": APCMK2PadColor.AQUA_GREEN, "effect": APCMK2PadEffect.PULSE_1_2},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "unassigned": {
                 "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
                 "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_2},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "command": {
                 "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
         },
         "record": {
             "null": {
                 "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "subprocess": {
                 "idle": {"color": APCMK2PadColor.SKY_BLUE, "effect": APCMK2PadEffect.ON_50},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "capture": {
                 "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_16},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "command": {
                 "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
         },
         "recording": {
             "null": {
                 "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "subprocess": {
                 "idle": {"color": APCMK2PadColor.SKY_BLUE, "effect": APCMK2PadEffect.ON_50},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "capture": {
                 "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_16},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "unassigned": {
                 "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
                 "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_50},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "command": {
                 "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
         },
         "preview": {
             "null": {
                 "idle": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
                 "running": {"color": APCMK2PadColor.BLACK, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "subprocess": {
                 "idle": {"color": APCMK2PadColor.ORANGE, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.AQUA_GREEN, "effect": APCMK2PadEffect.ON_100},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "unassigned": {
                 "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
                 "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_16},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "command": {
                 "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.PULSE_1_2},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.PULSE_1_2},
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             }
         }
     }, 

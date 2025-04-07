@@ -111,9 +111,10 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         # TODO Could the joystick have associated parameter?
 
                     # TODO 
-                    # Check dogstate for Pose or other toggle commands
+                    # Check DogState for Pose or other toggle commands
                     # Is there anything reflecting those?
                     # case DogState.MOVE | DogState.MOVING | DogState.AI:
+                    # Bring from midi-handler the same logic here
 
                         if cmd_class.__name__ in CMD_W_DATA:
                             cmd = cmd_class(True)
