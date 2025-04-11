@@ -53,7 +53,7 @@ import time
 # Change color on the arrows
 
 # TODO
-# Interfaz para batería y carga
+# Interfaz para batería y carga temperatura y velocidad del joystick
 
 # TODO
 # Play sounds from the dog itself
@@ -141,17 +141,18 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                             value_range = APC_MK2_FADER_LIMITS)
                         else:
                             if _mi['input_state']:
-                                cmd = action.command()
+                                cmd = action.command()                              
 
                                 if cmd.toggle:
                                     # print ('Toggle command!')
                                     if cmd.associated_states is not None:
-                                        # TODO This can't be working... should check for list
-                                        # if dog_state == cmd.associated_states:
                                         if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
                                             cmd = action.command(False)
-                                # else:
-                                    # print ('non-toggle command!')
+                                else:
+                                    # Needed to avoid sending the same command many times
+                                    if cmd.associated_states is not None:
+                                        if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
+                                            cmd = None
                         
                         outgoing_topic = action.payload
                     # Dog mode toggles go here
