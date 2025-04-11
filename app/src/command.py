@@ -272,13 +272,103 @@ class RiseSit(Command):
 # TODO ASYNC?
 class SwitchGait(Command):
     """
-
+ 	d: Gait enumeration value, with values ranging from 0 to 4, where 0 is idle, 1 is trot, 2 is trot running, 3 is forward climbing mode, and 4 is reverse climbing mode
     """
     def __init__(self, t: int):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": t},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchIdle(Command):
+    """
+ 	Gait idle
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 0},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchTrot(Command):
+    """
+ 	Gait trot
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 1},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchRunning(Command):
+    """
+ 	Gait trot running
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 2},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchForwardClimb(Command):
+    """
+ 	Gait forward climbing mode
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 3},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchBackwardClimb(Command):
+    """
+ 	Gait forward climbing mode
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 4},
                 "api_id": 1011
             },
             "expect_reply": False,
@@ -1159,12 +1249,12 @@ class SetObstacleAvoidance(Command):
         payload = {
             "topic": RTC_TOPIC["OBSTACLES_AVOID"],
             "options": {
-                "parameter": {"data": flag},
+                "parameter": {"enable": flag},
                 "api_id": 1001
             },
             "expect_reply": False,
             "update_switcher_mode": False,
-            "post_hook": None,
+            "post_hook": GetObstacleAvoidance(),
             "additional_wait": 0
         }
         super().__init__(payload, toggle=True)

@@ -53,7 +53,7 @@ class CommandHandler:
             self.capture.add(command, SPORT_TOPIC)
 
         await self.dog.send_async_command(command)
-
+        
     def handle_command(self, payload):
         # Movement = direct displacement on the space
         std_out(f"Movement Payload: {payload}")
