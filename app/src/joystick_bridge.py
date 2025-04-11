@@ -69,14 +69,35 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
             std_out ('Movement with axis!')
             match dog_state:
                 case DogState.MOVE | DogState.MOVING | DogState.AI_AGILE | DogState.AI_FREEAVOID | DogState.AI_FREEBOUND | DogState.AI_WALKSTAIR | DogState.AI_FREEJUMP | DogState.AI_WALKUPRIGHT | DogState.AI_CROSSSTEP:
-                    cmd = Move(
-                        x = round(joystick_status["Axis 1"]\
-                            * joystick_handler.sensitivity["vxy"], 2),
-                        y = round(joystick_status["Axis 0"]\
-                            * joystick_handler.sensitivity["vxy"], 2),
-                        z = round(joystick_status["Axis 2"]\
-                            * joystick_handler.sensitivity["vyaw"], 2)
+                    outgoing_topic = MOVE_TOPIC
+
+                    if not joystick_status["R2"]:
+
+                        vx = round(joystick_status["Axis 1"] * joystick_handler.sensitivity["vx"], 2)
+                        vy = round(joystick_status["Axis 0"] * joystick_handler.sensitivity["vy"], 2)
+                        vz = round(joystick_status["Axis 2"] * joystick_handler.sensitivity["vyaw"], 2)
+                        
+                        cmd = Move(
+                            x = vx,
+                            y = vy,
+                            z = vz
+                        )
+
+                        if cmd is not None:
+                            std_out (f'Robot command: {cmd.as_dict()}')
+                            await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+
+                    cmd = Euler(
+                        roll = 0,
+                        pitch = round(joystick_status["Axis 3"]\
+                            * joystick_handler.sensitivity["pitch"]/4, 2),
+                        yaw = 0
                     )
+
+                    if cmd is not None:
+                        std_out (f'Robot command: {cmd.as_dict()}')
+                        await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+
                 case DogState.STANDING:
                     cmd = Euler(
                         roll = round(joystick_status["Axis 0"]\
