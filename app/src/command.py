@@ -236,6 +236,37 @@ class Move(Command):
         }
         super().__init__(payload)
 
+# 1008
+class MoveToPos(Command):
+    """
+    Move to certain position
+    Control the moving speed, the set speed is the speed 
+    of the body coordinate system. It is recommended that you call
+    BalanceStand once before you call Move to ensure that you unlock 
+    and enter a removable state.
+    Value range (Normal):
+        Vx: [-0.6~0.6 ] (m/s)
+        Vy: Value range [-0.4~0.4 ] (m/s) 
+        Vyaw: Value range [-0.8~0.8 ] (rad/s)
+    Value range (AI):
+        Vx: [-0.6~0.6 ] (m/s)
+        Vy: Value range [-0.4~0.4 ] (m/s) 
+        Vyaw: Value range [-0.8~0.8 ] (rad/s)
+    """
+    def __init__(self, x: float, y: float, z: float):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": json.dumps({"x": x, "y": y, "z": z}),
+                "api_id": 1008
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
 # 1009
 class Sit(Command):
     def __init__(self):
