@@ -223,6 +223,10 @@ class MainWindow(QMainWindow):
                                 msg.append(str(item))
                         else:
                             msg = str(get_by_path(js, field.split('.')))
+                            # We have a float?
+                            if '.' in msg:
+                                if msg.lstrip("-").replace('.','',1).isdigit():
+                                    msg = str(round(float(msg), 3))
                 else: 
                     msg = message.strip("\"")
                                 
