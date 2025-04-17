@@ -10,7 +10,24 @@ import operator
 
 def get_by_path(root, items):
     """Access a nested object in root by item sequence."""
-    return reduce(operator.getitem, items, root)
+    if '*' in items:
+        indexes = [i for i, x in enumerate(items) if x == "*"]
+        
+        if len(indexes)>1: return None # Too complex
+        result = []
+
+        r = reduce(operator.getitem, items[0:indexes[0]], root)
+        for item in r:
+
+            if type(items[indexes[0]+1]) != list:
+                gitem = [items[indexes[0]+1]]
+            else:
+                gitem = items[indexes[0]+1]
+            result.append(reduce(operator.getitem, gitem, item))
+        
+        return result
+    else:
+        return reduce(operator.getitem, items, root)
 
 def set_by_path(root, items, value):
     """Set a value in a nested object in root by item sequence."""
@@ -44,7 +61,7 @@ class MqttListener(QObject):
     def client_on_message(self, client, userdata, msg):
         topic = msg.topic
         message = msg.payload.decode("utf-8")
-        print(f"Received message on {topic}: {message}")
+        # print(f"Received message on {topic}: {message}")
         self.message_received.emit(topic, message)
 
     def connect_to_broker(self):
@@ -92,7 +109,7 @@ class StatusIndicator(QWidget):
 
 # Simple Text Display widget
 class TextDisplay(QWidget):
-    def __init__(self, text=""):
+    def __init__(self, text="Waiting..."):
         super().__init__()
         self.text = text
         self.setMinimumSize(150, 30)
@@ -120,11 +137,6 @@ class TextDisplay(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self, mqtt_listener, widgets):
         super().__init__()
-
-        self.mqtt_listener = mqtt_listener
-        print (self.mqtt_listener.message_received)
-        self.mqtt_listener.message_received.connect(self.update_display)
-
         self.setWindowTitle("MQTT Display")
 
         # Layout for widgets (grid for topics and indicators)
@@ -137,9 +149,32 @@ class MainWindow(QMainWindow):
             for item in self.widgets[topic]:
                 widget = item['widget']
                 label = item['label']
-                self.layout.addWidget(QLabel(label), row, 0)
-                self.layout.addWidget(widget, row, 1)
+                if item['field'] is not None:
+                    if '*' in item['field']:
+                        _row = 0
+                        for i in range(item['number']):
+                            self.layout.addWidget(QLabel(f"{label}_{i}"), _row, 2)
+                            _widg = widget()
+                            _widg.setObjectName(f"{label}_{i}")
+                            self.layout.addWidget(_widg, _row, 3)
+                            _row += 1
+                            # print (_widg)
+                    else:
+                        self.layout.addWidget(QLabel(label), row, 0)
+                        _widg = widget()
+                        _widg.setObjectName(label)
+                        self.layout.addWidget(_widg, row, 1)
+                        # print (_widg)
+                else:
+                    self.layout.addWidget(QLabel(label), row, 0)
+                    _widg = widget()
+                    _widg.setObjectName(label)
+                    self.layout.addWidget(_widg, row, 1)
+                    # print (_widg)
                 row += 1
+
+        self.mqtt_listener = mqtt_listener
+        self.mqtt_listener.message_received.connect(self.update_display)
 
         # Set central widget
         central_widget = QWidget(self)
@@ -148,15 +183,30 @@ class MainWindow(QMainWindow):
 
         self.resize(400, 300)
 
+    def update_widget(self, widget, msg, color):
+        # print ('updating widget', widget, msg, color)
+        if isinstance(widget, SegmentDisplay):
+            # Map message to a value for a 7-segment display
+            widget.set_value(msg)
+        elif isinstance(widget, StatusIndicator):
+            # Map message to a color for the status indicator
+            color = QColor(msg)
+            widget.set_color(color)
+        elif isinstance(widget, TextDisplay):
+            # Update text for the TextDisplay widget
+            widget.set_color(color)
+            widget.set_text(msg)
+
     def update_display(self, topic, message):
         """Update the display based on the MQTT topic and message"""
-        print(f"Updating display for {topic}: {message}")
+        # print(f"Updating display for {topic}: {message}")
         if topic in self.widgets:
-            widget = self.widgets[topic]
+            # widget = self.widgets[topic]
             for item in self.widgets[topic]:
                 field = item['field']
-                widget = item['widget']
+                label = item['label']
                 color_map = None
+                
                 if 'color_map' in item:
                     color_map = item['color_map']
                 
@@ -167,31 +217,46 @@ class MainWindow(QMainWindow):
                         print ('Error decoding JSON')
                         pass
                     else:
-                        msg = str(get_by_path(js, field.split('.')))
+                        if '*' in field:
+                            msg = []
+                            for item in get_by_path(js, field.split('.')):
+                                msg.append(str(item))
+                        else:
+                            msg = str(get_by_path(js, field.split('.')))
                 else: 
-                    msg = message
-
-                color = "black"
+                    msg = message.strip("\"")
+                                
+                color = "white"
                 if color_map is not None:
-                    for cmap in color_map:
-                        print (cmap)
-                        if float(msg)>cmap:
-                            color = color_map[cmap]
-                            break
-                
-                if isinstance(widget, SegmentDisplay):
-                    print ("segment")
-                    # Map message to a value for a 7-segment display
-                    widget.set_value(msg)
-                elif isinstance(widget, StatusIndicator):
-                    # Map message to a color for the status indicator
-                    print ("indicator")
-                    color = QColor(msg)
-                    widget.set_color(color)
-                elif isinstance(widget, TextDisplay):
-                    # Update text for the TextDisplay widget
-                    widget.set_color(color)
-                    widget.set_text(msg)
+                    if type(msg) != list:
+                        for cmap in color_map:
+                            if type(cmap) == int:
+                                if float(msg)>cmap:
+                                    color = color_map[cmap]
+                                    break
+                            elif type(cmap) == str:
+                                if cmap == msg:
+                                    color = color_map[cmap]
+                                    break
+                        self.update_widget(self.findChild(QWidget, label), msg, color)
+                    else:
+                        i = 0
+                        for _msg in msg:
+                            # print ('msg', _msg, f"{label}_{i}")
+                            for cmap in color_map:
+                                if type(cmap) == int:
+                                    if float(_msg)>cmap:
+                                        color = color_map[cmap]
+                                        break
+                                elif type(cmap) == str:
+                                    if cmap == _msg:
+                                        color = color_map[cmap]
+                                        break
+                            # print (color)
+                            self.update_widget(self.findChild(QWidget, f"{label}_{i}"), _msg, color)
+                            i += 1
+                else:
+                    self.update_widget(self.findChild(QWidget, label), msg, color)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -200,28 +265,75 @@ if __name__ == "__main__":
     broker = MQTT_BROKER
     port = 1883
     
-    topics = {"/out/state": [
+    topics = {
+                "/out/mode/mode": [
+                    {
+                        'field': None,
+                        'widget': TextDisplay,
+                        'label': 'Dog Mode',
+                        'color_map': {
+                            "normal": 'green',
+                            "advanced": 'purple',
+                            "ai":  '#0055FF'
+                        }
+                    }
+                ],
+                "/out/state/LF_SPORT_MOD_STATE": [
                     {
                         'field': 'LF_SPORT_MOD_STATE.mode',
-                        'widget': TextDisplay("Waiting..."),
+                        'widget': TextDisplay,
                         'label': 'Dog State'
                     },
                     {
+                        'field': 'MULTIPLE_STATE.bodyHeight',
+                        'widget': TextDisplay,
+                        'label': 'Body Height'
+                    },
+                    {
+                        'field': 'MULTIPLE_STATE.brightness',
+                        'widget': TextDisplay,
+                        'label': 'Led Brightness'
+                    },
+                    {
+                        'field': 'MULTIPLE_STATE.footRaiseHeight',
+                        'widget': TextDisplay,
+                        'label': 'Foot Raise Height'
+                    },
+                    {
+                        'field': 'MULTIPLE_STATE.obstaclesAvoidSwitch',
+                        'widget': TextDisplay,
+                        'label': 'Obstacle Avoid Switch'
+                    },
+                    {
+                        'field': 'MULTIPLE_STATE.speedLevel',
+                        'widget': TextDisplay,
+                        'label': 'Speed Level'
+                    },
+                    {
+                        'field': 'MULTIPLE_STATE.volume',
+                        'widget': TextDisplay,
+                        'label': 'Volume'
+                    },
+                    {
                         'field': 'LOW_STATE.bms_state.soc',
-                        'widget': TextDisplay("Waiting..."),
+                        'widget': TextDisplay,
                         'label': 'Battery (%)',
                         'color_map': {
                             75: 'green',
                             25: 'yellow',
                             0:  'red'
                         }
-                    }
-                ],
-                "/out/mode": [
+                    },
                     {
-                        'field': None,
-                        'widget': TextDisplay("Waiting for message..."),
-                        'label': 'Dog Mode'
+                        'field': 'LOW_STATE.motor_state.*.temperature',
+                        'widget': TextDisplay,
+                        'label': 'Temperature (degC)',
+                        'color_map': {
+                            80: 'red',
+                            60: 'yellow',
+                            30:  'green'
+                        },
+                        'number': 12
                     }
                 ]
             }
