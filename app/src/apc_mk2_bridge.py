@@ -15,34 +15,6 @@ from subprocess_run import subprocess_run
 from media_track import Track
 import time
 
-
-# TODO (ONGOING)
-# -----
-# Music
-# -----
-# drum - pipe to synth (intro)
-# include all sensors
-
-# TODO
-# -----
-# Modes
-# -----
-# Change mapping of limits on each command based on the mode !!!!!!
-# Change commands available on each mode?
-
-# TODO
-# Change color on the arrows
-
-# TODO
-# velocidad del joystick en los faders?
-
-# TODO
-# Play sounds from the dog itself
-
-# TODO
-# FREEBOUND AND FREEJUMP - not working
-
-
 async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
     dog_mode = None
