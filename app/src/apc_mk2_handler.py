@@ -30,7 +30,7 @@ class APCMK2Handler(StateMachine):
     _dog_mode = None # DogMode in dog.py Normal, Advance, AI
     _dog_state = None # DogState in dog.py
 
-    def __init__(self, port=MIDI_PORT_NAME):
+    def __init__(self, port=APC_PORT_NAME):
         self.port = port
         self.midi_in, _ = open_midiinput(self.port)
         self.midi_out, _ = open_midioutput(self.port)

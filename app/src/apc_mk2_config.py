@@ -2,12 +2,12 @@ from enum import Enum
 from config import *
 from command import *
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON, CONTROLLER_CHANGE
-from midi_map import pad_commands
+from apc_mk2_map import pad_commands
 from capture import CaptureCommand, CaptureAction
 from os import listdir
 from os.path import isfile, join, dirname, realpath, splitext
 
-MIDI_PORT_NAME = 'APC mini mk2:APC mini mk2 APC mini mk2 Contr 20:0'
+APC_PORT_NAME = 'APC mini mk2:APC mini mk2 APC mini mk2 Contr 20:0'
 APC_MK2_NUM_PADS = 64
 APC_MK2_FADER_LIMITS = [0, 127]
 
@@ -425,6 +425,7 @@ ACTION_MAP = {
             "FADER_2": APCMK2Action(command=SetBrightness, payload=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, payload=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            
         }
     },
     "preview": {
