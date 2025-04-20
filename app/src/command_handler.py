@@ -2,7 +2,7 @@ import asyncio
 from capture import Capture
 from tools import std_out
 import json
-from command import Command
+from command import Command, AudioCommand
 from config import *
 
 class CommandHandler:
@@ -39,6 +39,8 @@ class CommandHandler:
                         self.handle_command(_payload)
                     elif INCOMING_TOPICS[source] == 'capture':
                         self.handle_capture_command(_payload)
+                    elif INCOMING_TOPICS[source] == 'audio':
+                        await self.handle_audio_command(_payload)
                     else:
                         std_out(f'Unknown handler command')
                 else:
@@ -53,6 +55,16 @@ class CommandHandler:
             self.capture.add(command, SPORT_TOPIC)
 
         await self.dog.send_async_command(command)
+
+    async def handle_audio_command(self, payload):
+        # Audio
+        std_out(f"Audio Payload: {payload}")
+        command = AudioCommand(payload)
+
+        if self.capture is not None:
+            self.capture.add(command, AUDIO_TOPIC)
+        
+        await self.dog.send_audio_command(command)
         
     def handle_command(self, payload):
         # Movement = direct displacement on the space

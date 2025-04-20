@@ -1,13 +1,14 @@
 import asyncio
 import json
+import os
 
 from command import *
 from config import *
 from tools import *
 
 from go2_webrtc_driver.constants import *
-
-from enum import IntEnum
+from go2_webrtc_driver.webrtc_audiohub import WebRTCAudioHub
+from aiortc.contrib.media import MediaPlayer
 
 class Dog:
     def __init__(self, conn=None, dry_run=False, broadcast=False, mqtt_handler=None):
@@ -24,9 +25,136 @@ class Dog:
         self.dry_run = dry_run
         self.broadcast = broadcast
         self.mqtt_handler = mqtt_handler
+        # Audio hub
+        if not self.dry_run:
+            self.audio_hub = WebRTCAudioHub(self.conn)
+        self.audio_list = None
 
     async def connect(self):
         return await self.conn.connect()
+
+    async def get_audio_list(self, reload = True):
+        # From go2_webrtc_connect example
+        if self.dry_run: return
+
+        if reload:
+            # Get the list of available audio files
+            response = await self.audio_hub.get_audio_list()
+
+            if response and isinstance(response, dict):
+                data_str = response.get('data', {}).get('data', '{}')
+                self.audio_list = json.loads(data_str).get('audio_list', [])
+        
+        return self.audio_list
+    
+    def get_audio_uuid(self, audio_file = None):
+        if self.dry_run: return
+
+        if audio_file is None:
+            std_out(f'Need at least an audio file')
+            return None
+
+        filename = os.path.splitext(audio_file)[0]
+        # Check if file already exists by CUSTOM_NAME and store UUID
+        existing_audio = next((audio for audio in self.audio_list if audio['CUSTOM_NAME'] == filename), None)
+        
+        if existing_audio:
+            std_out(f"Audio file {filename} already exists, skipping upload")
+            uuid = existing_audio['UNIQUE_ID']
+        else:
+            uuid = None
+        
+        return uuid
+    
+    async def upload_audio_file(self, audio_file = None):
+        if self.dry_run: return
+
+        if audio_file is None:
+            std_out(f'Need at least an audio file to upload')
+            return None
+
+        # Check if file already exists by CUSTOM_NAME and store UUID
+        await self.get_audio_list(reload=True)
+        uuid = self.get_audio_uuid(audio_file)
+        
+        if uuid is None:
+            filename = os.path.splitext(audio_file)[0]
+            std_out(f"Audio file {filename} not found, proceeding with upload")
+
+            # TODO Fix
+            audio_file_path = os.path.join(os.path.dirname(__file__), audio_file)
+            if not os.path.exists(audio_file_path):
+                std_out(f"{audio_file_path} does not exist")
+                return None
+
+            # Upload the audio file
+            std_out("Starting audio file upload...")
+            await self.audio_hub.upload_audio_file(audio_file_path)
+            std_out("Audio file upload completed")
+
+            await self.get_audio_list(reload=True)
+            uuid = self.get_audio_uuid(audio_file)
+            std_out(f"New audio file uuid: {uuid}")
+        
+        return uuid
+
+    async def play_dog_audio(self, audio_file=None):
+
+        if audio_file is None:
+            std_out(f'Need at least an audio file to play')
+            return None
+
+        std_out(f'Playing dog audio: {audio_file}')
+        if self.dry_run: return
+
+        # Check if file already exists by CUSTOM_NAME and store UUID
+        uuid = self.get_audio_uuid(audio_file)
+        if uuid is None:
+            std_out("File not found. Upload it first!")
+            return None
+        
+        await self.audio_hub.play_by_uuid(uuid)
+
+    async def add_media_player_track(self, track_path = ''):
+        if track_path == '':
+            player = MediaPlayer(track_path)
+            audio_track = player.audio
+            self.conn.pc.addTrack(audio_track)
+
+    async def play_local_audio(self, audio_file_path=''):
+        if audio_file_path == '':
+            std_out(f'Need at least a path to play')
+            return None
+                
+        # TODO check file paths
+        if os.path.exists(audio_file_path):
+            std_out (f'Playing local audio file: {audio_file_path}')
+            if self.dry_run: return
+            await self.add_media_player_track(audio_file_path)
+        else:
+            std_out(f'File does not exist: {audio_file_path}')
+
+    async def stream_audio_track(self, audio_file_path=''):
+        if audio_file_path == '':
+            std_out(f'Need at least a path to play')
+            return None
+        
+        std_out (f'Playing stream audio track: {audio_file_path}')
+        if self.dry_run: return
+        
+        await self.add_media_player_track(audio_file_path)
+
+    async def send_audio_command(self, command):
+        std_out(f"Audio command source: {command.source}")
+        std_out(f"Audio command options: {command.options}")
+        # TODO Can this be busy? If so, how do we know?
+
+        if command.source == 'dog_file':
+            await self.play_dog_audio(command.options["audio_file"])
+        elif command.source == 'client_file':
+            await self.play_local_audio(command.options["audio_file"])
+        elif command.source == 'stream_file':
+            await self.stream_audio_track(command.options["audio_stream"])
 
     async def send_async_command(self, command):
         # Reply command, to acquire lock
@@ -83,14 +211,8 @@ class Dog:
             asyncio.gather(self.conn.datachannel.pub_sub.publish_request_new(
                 command.topic, command.options))
 
-    # TODO Add MediaStreamTrack
-    # def audio_handler(self, address, *args):
-    #     std_out(f"{address}: {args}")
-    #     argsd = json.loads(args[0])
-    #     std_out (argsd)
-
     async def publish_response(self, channel, response):
-        print (f'{RESPONSE_TOPIC}/{channel}')
+        # print (f'{RESPONSE_TOPIC}/{channel}')
         if self.broadcast:
             await self.mqtt_handler.publish(topic=f'{RESPONSE_TOPIC}/{channel}', \
                 payload=json.dumps(response))

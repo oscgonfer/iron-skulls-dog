@@ -39,6 +39,9 @@ AVOIDANCE_TOPIC = AVOIDANCE_FILTER.replace("/#","")
 CAPTURE_FILTER = f"{CMD_FILTER}/capture/#"
 CAPTURE_TOPIC = CAPTURE_FILTER.replace("/#","")
 
+AUDIO_FILTER = f"{CMD_FILTER}/audio/#"
+AUDIO_TOPIC = AUDIO_FILTER.replace("/#","")
+
 # SAFE_FILTER = f"{PRE_FILTER}/safety/#"
 # SAFE_TOPIC = SAFE_FILTER.replace("/#","")
 
@@ -48,7 +51,8 @@ INCOMING_TOPICS = {
     SWITCHER_TOPIC: 'async',
     CAPTURE_TOPIC: 'capture',
     VUI_TOPIC: 'sync',
-    AVOIDANCE_TOPIC: 'async'
+    AVOIDANCE_TOPIC: 'async',
+    AUDIO_TOPIC: 'audio'
 }
 
 ## Outgoing topics

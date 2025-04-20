@@ -62,6 +62,60 @@ class Command:
     def to_json(self):
         return json.dumps(self.as_dict())
 
+class AudioCommand:
+    def __init__(self, payload):
+        # Exportable
+        self.source = payload["source"]
+        self.options = payload["options"]
+
+    def as_dict(self):
+        return {
+            'source': self.source,
+            'options': self.options,            
+        }
+
+    def to_json(self):
+        return json.dumps(self.as_dict())
+
+class PlayDogAudioFile(AudioCommand):
+    """
+    Play an audio file previously uploaded to the dog
+    """
+    def __init__(self, audio_file: str = ''):
+        payload = {
+            "source": "dog_file",
+            "options": {
+                "audio_file": audio_file
+            }
+        }
+        super().__init__(payload)
+
+class PlayClientAudioFile(AudioCommand):
+    """
+    Play an audio file locally in the client
+    """
+    def __init__(self, audio_file: str = ''):
+        payload = {
+            "source": "client_file",
+            "options": {
+                "audio_file": audio_file
+            }
+        }
+        super().__init__(payload)
+
+class StreamAudioFile(AudioCommand):
+    """
+    Play an audio file locally in the client
+    """
+    def __init__(self, audio_stream: str = ''):
+        payload = {
+            "source": "stream_file",
+            "options": {
+                "audio_stream": audio_stream
+            }
+        }
+        super().__init__(payload)
+
 # 1001
 class Damp(Command):
     """

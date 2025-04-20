@@ -61,13 +61,18 @@ class Capture:
         if self.status != CaptureStatus.running: return
         timedelta = datetime.datetime.now() - self.start_time
 
+        if isinstance(command, Command):
+            keyword = 'command'
+        elif isinstance(command, AudioCommand):
+            keyword = 'audio_command'
+
         self.commands.append(
             {
                 'timestamp': {
                     'seconds': timedelta.seconds,
                     'microseconds': timedelta.microseconds
                     },
-                'command': command.to_json(),
+                keyword: command.to_json(),
                 'mqtt_topic': topic
             }
         )

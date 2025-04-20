@@ -17,6 +17,7 @@ async def main():
     # if 'start_at' in capture['metadata']:
     #     cstart = capture['metadata']['start_at']
     # print (cstart)
+    
     for item in capture['commands']:
         timestamp = datetime.timedelta(seconds = item["timestamp"]["seconds"], microseconds=item["timestamp"]["microseconds"])
 
@@ -24,8 +25,13 @@ async def main():
         # print (item)
         # if timestamp.total_seconds()*1000<cstart: print ('skip'); continue
 
-        cmd = Command(json.loads(item["command"]))
+        if "command" in item:
+            cmd = Command(json.loads(item["command"]))
+        elif "audio_command" in item:
+            cmd = AudioCommand(json.loads(item["audio_command"]))
+        
         topic = item["mqtt_topic"]
+        
         while not datetime.datetime.now()-start_time > timestamp:
             time.sleep(0.001)
 
