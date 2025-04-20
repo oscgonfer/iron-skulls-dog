@@ -66,8 +66,9 @@ if __name__ == "__main__":
     asyncio.set_event_loop(loop)
 
     if not args.dry_run:
+        # Connect to the dog
         loop.run_until_complete(dog.connect())
-
+        # Subscribe to each feedback channel and add a callback to it
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LOW_STATE'], \
             dog.lowstate_callback)
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['MULTIPLE_STATE'], \
