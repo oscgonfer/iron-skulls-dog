@@ -34,6 +34,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
         except asyncio.QueueEmpty:
             pass
         else:
+            # Add here topics to subscribe
             if STATE_TOPIC in source:
                 try:
                     payload = json.loads(data)
@@ -95,35 +96,44 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
 
                         if 'FADER' in str(_mi['name']):
                             cmd = action.command(_mi['input_state'], 
-                            value_range = APC_MK2_FADER_LIMITS)
-                        else:
-                            if _mi['input_state']:
-                                cmd = action.command()                              
-
-                                if cmd.toggle:
-                                    # print ('Toggle command!')
-                                    if cmd.associated_states is not None:
-                                        if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
-                                            cmd = action.command(False)
-                                else:
-                                    # Needed to avoid sending the same command many times
-                                    if cmd.associated_states is not None:
-                                        if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
-                                            cmd = None
+                                value_range = APC_MK2_FADER_LIMITS)
                         
-                        outgoing_topic = action.payload
+                        else:
+
+                            if _mi['input_state']:
+                                # For cases where there is a payload.
+                                # TODO for now, there is no case where the command has a payload and is also a toggle (payloads are only needed for audio commands)
+                                if action.payload is not None:
+                                    cmd = action.command(**action.payload)
+                                else:
+                                # Instantiate one dummy command in case is a toggle
+                                    cmd = action.command()
+
+                                    if cmd.toggle:
+                                        # print ('Toggle command!')
+                                        if cmd.associated_states is not None:
+                                            if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
+                                                cmd = action.command(flag=False)
+                                    else:
+                                        # Needed to avoid sending the same command many times
+                                        if cmd.associated_states is not None:
+                                            if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
+                                                cmd = None
+                        
+                        outgoing_topic = action.topic
+                    
                     # Dog mode toggles go here
                     elif action.type == APCMK2ActionType.dog_mode_toggle and action.command is not None:
                         if _mi['input_state']:
                             cmd = action.command()
 
-                        outgoing_topic = action.payload
+                        outgoing_topic = action.topic
 
                     # Capture commands go here
                     elif action.type == APCMK2ActionType.capture:
                         if _mi['input_state']:
                             cmd = action.command # Capture commands are not callable
-                        outgoing_topic = action.payload
+                        outgoing_topic = action.topic
 
                     # Subprocess commands go here
                     elif action.type == APCMK2ActionType.subprocess:
@@ -154,6 +164,8 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
 
                                                 if medias[midi_item] is not None:
                                                     medias[midi_item].play()
+                                                    # Wait for media to play
+                                                    # TODO Is this dangerous?
                                                     while not medias[midi_item].is_playing:
                                                         time.sleep(0.05)
                                                     apc_handler.pads[midi_item].press()
@@ -172,7 +184,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                                     apc_handler.lock()
 
                                     std_out ('Play capture started')
-                                    # subprocess.call(['python', command,'--capture-file', capture_path])
+                                    # TODO Can we stop this?
                                     await subprocess_run(' '.join(['python', command,'--capture-file', capture_path]))
                                     std_out ('Play capture done')
 
@@ -188,6 +200,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                                 std_out (f"\n\tDescription: {capture['metadata']['description']}\n", priority = True, timestamp = False)
                                 if 'track' in capture['metadata']:
                                     std_out (f"\tTrack file: {capture['metadata']['track']['path']}\n", priority = True, timestamp = False)
+        
         if cmd is not None:
             if apc_handler.current_state.id != 'preview':
                 std_out (f'Command: {cmd.as_dict()}')
@@ -197,6 +210,9 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                 print ()
                 std_out (f'{action.command.__doc__}', priority = True, timestamp = False)
                 print ()
+
+        # TODO Announce mk2 status
+        # await mqtt_handler.publish(topic=MPC_TOPIC, payload=json.dumps(midi_values))
         
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)

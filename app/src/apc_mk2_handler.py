@@ -86,17 +86,17 @@ class APCMK2Handler(StateMachine):
 
                 self.action_map["preview"]["pads"][item] = APCMK2Action(command='preview', payload=item, atype=APCMK2ActionType.subprocess)
 
-                self.action_map["record"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+                self.action_map["record"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
 
-                self.action_map["recording"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+                self.action_map["recording"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
             else: 
-                self.action_map["normal"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+                self.action_map["normal"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
 
-                self.action_map["preview"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+                self.action_map["preview"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
 
-                self.action_map["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+                self.action_map["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), topic=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
 
-                self.action_map["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+                self.action_map["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), topic=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
     
     def assign_pads(self):
         for item in range(APC_MK2_NUM_PADS):
@@ -211,11 +211,11 @@ class APCMK2Handler(StateMachine):
                     self.action_map["normal"]["pads"][channel]=APCMK2Action(command='play', payload=f'{channel}', atype=APCMK2ActionType.subprocess)
                     self.action_map["preview"]["pads"][channel]=APCMK2Action(command='preview', payload=f'{channel}', atype=APCMK2ActionType.subprocess)
 
-                    self.action_map["record"]["pads"][channel]=APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
-                    self.action_map["recording"]["pads"][channel]=APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+                    self.action_map["record"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
+                    self.action_map["recording"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
                 
                 elif note == NOTE_OFF and channel == self.target_pad and self.current_state.id == 'recording':
-                    # TODO Sometimes the recording doesn't get stored. Maybe because the 
+                    # TODO Sometimes the recording doesn't get stored. Maybe because the thing is busy?
                     self.send('ev_finish_recording')
                     self.pads[channel].release()
                     self.target_pad = None
@@ -241,12 +241,12 @@ class APCMK2Handler(StateMachine):
                 self.buttons[channel].release()
                 self.send('ev_finish_'+action.payload.name)
                 
-            print ('Updated state:', self.current_state)
+            std_out ('Updated state:', self.current_state)
 
         elif action.type == APCMK2ActionType.apc_mode_change:
-            print ('Current state:', self.current_state)
+            std_out ('Current state:', self.current_state)
             if note == NOTE_ON:
-                print ('Sending', action.payload.name)
+                std_out ('Sending', action.payload.name)
                 self.send('ev_'+action.payload.name)
                 # Workaround because buttons don't have a mapping
                 if action.payload.name == 'normal':
