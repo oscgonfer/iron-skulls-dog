@@ -42,10 +42,13 @@ CAPTURE_TOPIC = CAPTURE_FILTER.replace("/#","")
 AUDIO_FILTER = f"{CMD_FILTER}/audio/#"
 AUDIO_TOPIC = AUDIO_FILTER.replace("/#","")
 
-# SAFE_FILTER = f"{PRE_FILTER}/safety/#"
-# SAFE_TOPIC = SAFE_FILTER.replace("/#","")
+SAFE_FILTER = f"{CMD_FILTER}/safety/#"
+RESUME_TOPIC = SAFE_FILTER.replace("#","resume")
+STOP_TOPIC = SAFE_FILTER.replace("#","stop")
 
 INCOMING_TOPICS = {
+    RESUME_TOPIC: 'async',
+    STOP_TOPIC: 'async',
     SPORT_TOPIC: 'async',
     MOVE_TOPIC: 'sync',
     SWITCHER_TOPIC: 'async',
@@ -56,7 +59,6 @@ INCOMING_TOPICS = {
 }
 
 ## Outgoing topics
-    
 STATE_FILTER = f"{OUT_FILTER}/state/#"
 STATE_TOPIC = STATE_FILTER.replace("/#","")
 

@@ -233,7 +233,8 @@ ACTION_MAP = {
             "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.record, atype=APCMK2ActionType.apc_mode_change),
             "UP": APCMK2Action(command=SpeedLevelHigh, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
-            "STOP_ALL": APCMK2Action(command=StopMove, topic=SPORT_TOPIC, atype=APCMK2ActionType.command)
+            "NOTE": APCMK2Action(command=None, topic=RESUME_TOPIC, atype=APCMK2ActionType.command),
+            "STOP_ALL": APCMK2Action(command=StopMove, topic=STOP_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
@@ -257,7 +258,8 @@ ACTION_MAP = {
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "UP": APCMK2Action(command=SpeedLevelHigh, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
-            "STOP_ALL": APCMK2Action(command=StopMove, topic=SPORT_TOPIC, atype=APCMK2ActionType.command)
+            "NOTE": APCMK2Action(command=None, topic=RESUME_TOPIC, atype=APCMK2ActionType.command),
+            "STOP_ALL": APCMK2Action(command=StopMove, topic=STOP_TOPIC, atype=APCMK2ActionType.command)
         },
         "pads": {
         },
