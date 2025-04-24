@@ -16,7 +16,8 @@ class Dog:
         self.state = {
             'LOW_STATE': None,
             'LF_SPORT_MOD_STATE': None,
-            'MULTIPLE_STATE': None
+            'MULTIPLE_STATE': None, 
+            'WIRELESS': None
         }
         self._mode = None
         self._motion_switcher = None
@@ -25,13 +26,17 @@ class Dog:
         self.dry_run = dry_run
         self.broadcast = broadcast
         self.mqtt_handler = mqtt_handler
-        # Audio hub
-        if not self.dry_run:
-            self.audio_hub = WebRTCAudioHub(self.conn)
+
         self.audio_list = None
 
     async def connect(self):
-        return await self.conn.connect()
+        await self.conn.connect()
+
+        # Audio hub
+        if not self.dry_run:
+            self.audio_hub = WebRTCAudioHub(self.conn)
+        
+        return
 
     async def get_audio_list(self, reload = True):
         # From go2_webrtc_connect example
@@ -56,11 +61,14 @@ class Dog:
 
         filename = os.path.splitext(audio_file)[0]
         # Check if file already exists by CUSTOM_NAME and store UUID
+        if self.audio_list is None:
+            return None
+        
         existing_audio = next((audio for audio in self.audio_list if audio['CUSTOM_NAME'] == filename), None)
         
         if existing_audio:
-            std_out(f"Audio file {filename} already exists, skipping upload")
             uuid = existing_audio['UNIQUE_ID']
+            std_out(f"Audio file {filename} found. UUID: {uuid}")
         else:
             uuid = None
         
@@ -107,6 +115,7 @@ class Dog:
         std_out(f'Playing dog audio: {audio_file}')
         if self.dry_run: return
 
+        await self.get_audio_list(reload=True)
         # Check if file already exists by CUSTOM_NAME and store UUID
         uuid = self.get_audio_uuid(audio_file)
         if uuid is None:
@@ -116,17 +125,19 @@ class Dog:
         await self.audio_hub.play_by_uuid(uuid)
 
     async def add_media_player_track(self, track_path = ''):
-        if track_path == '':
+        std_out(f'Adding media player track: {track_path}')
+        if track_path != '':
             player = MediaPlayer(track_path)
             audio_track = player.audio
             self.conn.pc.addTrack(audio_track)
+        std_out('Done')
 
     async def play_local_audio(self, audio_file_path=''):
         if audio_file_path == '':
             std_out(f'Need at least a path to play')
             return None
                 
-        # TODO check file paths
+        # TODO check file paths in absolute mode
         if os.path.exists(audio_file_path):
             std_out (f'Playing local audio file: {audio_file_path}')
             if self.dry_run: return
@@ -147,7 +158,6 @@ class Dog:
     async def send_audio_command(self, command):
         std_out(f"Audio command source: {command.source}")
         std_out(f"Audio command options: {command.options}")
-        # TODO Can this be busy? If so, how do we know?
 
         if command.source == 'dog_file':
             await self.play_dog_audio(command.options["audio_file"])
@@ -247,6 +257,14 @@ class Dog:
         # Update mode
         self._mode = self.state['LF_SPORT_MOD_STATE']['mode']
         asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
+
+    # def wireless_callback(self, message):
+    #     print (message)
+    #     current_message = message['data']
+    #     # Update state
+    #     self.state['WIRELESS'] = current_message
+    #     # Update mode
+    #     asyncio.gather(self.publish_state('WIRELESS'))
 
     @property
     def mode(self):

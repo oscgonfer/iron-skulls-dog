@@ -1,5 +1,6 @@
 from enum import Enum
 from rtmidi.midiconstants import NOTE_OFF, NOTE_ON, CONTROLLER_CHANGE
+# from json import JSONEncoder
 
 class APCMK2ButtonName(Enum):
     VOLUME = 0x64
@@ -110,6 +111,20 @@ class APCMK2Action():
         self.type: APCMK2ActionType = atype
         self.status: APCMK2ActionStatus = APCMK2ActionStatus.idle
         self.on = on
+
+#     def as_dict(self):
+#         return {
+#             # "command": self.command.__name__,
+#             "topic": self.topic,
+#             # "payload": self.payload,
+#             # "type": self.type,
+#             # "status": self.status,
+#             # "on": self.on
+#         }
+
+# class APCMK2ActionEncoder(JSONEncoder):
+#         def default(self, o):
+#             return o.as_dict()
 
 class APCMK2Input():
     def __init__(self, channel: int, name: str, action: APCMK2Action = None):

@@ -24,7 +24,6 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
     outgoing_topic = SPORT_TOPIC
 
     while True:
-        
         # Get status of midi
         midi_values = apc_handler.status.copy()
         apc_handler.reset_triggers()
@@ -35,7 +34,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
             pass
         else:
             # Add here topics to subscribe
-            if STATE_TOPIC in source:
+            if STATE_TOPIC in source.value:
                 try:
                     payload = json.loads(data)
                 except json.decoder.JSONDecodeError:
@@ -50,7 +49,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                     else:
                         dog_state = _dog_state
                         apc_handler.update_dog_state(dog_state)
-            if MODE_TOPIC in source:
+            if MODE_TOPIC in source.value:
                 try:
                     payload = json.loads(data)
                 except json.decoder.JSONDecodeError:
@@ -63,7 +62,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                         std_out('Payload doesnt contain dog mode')
                         pass
                     else:
-                        dog_mode = _dog_mode                
+                        dog_mode = _dog_mode
                         apc_handler.update_dog_mode(dog_mode)
         
         # Check status of medias
@@ -97,9 +96,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                         if 'FADER' in str(_mi['name']):
                             cmd = action.command(_mi['input_state'], 
                                 value_range = APC_MK2_FADER_LIMITS)
-                        
                         else:
-
                             if _mi['input_state']:
                                 # For cases where there is a payload.
                                 # TODO for now, there is no case where the command has a payload and is also a toggle (payloads are only needed for audio commands)
@@ -211,11 +208,26 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                 std_out (f'{action.command.__doc__}', priority = True, timestamp = False)
                 print ()
 
-        # TODO Announce mk2 status
-        # await mqtt_handler.publish(topic=MPC_TOPIC, payload=json.dumps(midi_values))
+        # TODO Announce mk2 faders
+        # TODO Remove? Is this a problema?
+        state_payload = {}
+        for item in midi_values:
+            action = midi_values[item]['action']
+            # TODO only for unassigned commands
+            if action.command is not None: 
+                continue
+            st = midi_values[item]['name']
+            if type(st) != str: continue
+            if 'FADER' not in st: continue
+            pl = {
+                'channel': midi_values[item]['channel'], 
+                'input_state': midi_values[item]['input_state']
+            }
+            state_payload[st] = pl
+        await mqtt_handler.publish(topic=f'{MPC_TOPIC}', payload=json.dumps(state_payload))
         
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
-        await asyncio.sleep(0.001)
+        await asyncio.sleep(0.0001)
         cmd = None
 
 async def start_bridge(mqtt_handler = None, apc_handler = None):

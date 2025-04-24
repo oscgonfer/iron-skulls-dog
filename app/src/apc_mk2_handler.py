@@ -215,6 +215,7 @@ class APCMK2Handler(StateMachine):
                     self.action_map["recording"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
                 
                 elif note == NOTE_OFF and channel == self.target_pad and self.current_state.id == 'recording':
+
                     # TODO Sometimes the recording doesn't get stored. Maybe because the thing is busy?
                     self.send('ev_finish_recording')
                     self.pads[channel].release()

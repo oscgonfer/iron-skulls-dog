@@ -19,7 +19,7 @@ sensor_map = {
         {
             'field': 'LOW_STATE.foot_force',
             'midi_event': [NOTE_ON, NOTE_OFF],
-            'notes': [55, 56, 57, 58],
+            'notes': [55, None, None, None],
             'threshold': 50,
             'velocity': 2
         }
@@ -40,7 +40,7 @@ async def sensor_bridge(midi_handler=None, queue=None, mqtt_handler=None):
         except asyncio.QueueEmpty:
             pass
         else:
-            if STATE_TOPIC in source:
+            if STATE_TOPIC in source.value:
                 try:
                     _payload = json.loads(data)
                 except json.decoder.JSONDecodeError:

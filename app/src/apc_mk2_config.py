@@ -242,7 +242,11 @@ ACTION_MAP = {
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
-            
+            # Sensitivity for joystick
+            "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_7": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned)
+
         }
     },
     "preview": {
@@ -262,6 +266,11 @@ ACTION_MAP = {
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # Sensitivity for joystick
+            "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_7": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned)
+
         }
     },
     "record": {
@@ -282,6 +291,11 @@ ACTION_MAP = {
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # Sensitivity for joystick
+            "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_7": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned)
+
         }
     },
     "recording": {
@@ -303,6 +317,11 @@ ACTION_MAP = {
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # Sensitivity for joystick
+            "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
+            "FADER_7": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned)
+
         }
     }
 }

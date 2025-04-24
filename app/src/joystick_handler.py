@@ -40,19 +40,20 @@ BALLS = {
 }
 
 JOYSTICK_DEFAULTS = {
+    # TODO - this shouldn't be static, but per mode
     "sensitivity": {
-        "vx": 3.8,
-        "vy": 1,
-        "vyaw": 4.0,
+        "vx": 1,
+        "vy": 0.4,
+        "vyaw": 0.8,
         "roll": 0.75,
         "yaw": 0.6,
         "pitch": 0.75
     },
     "sensitivity_limits": {
-        "speed": [0.06, 3.8],
-        "roll": [0, 0.75],
-        "yaw": [0, 0.6],
-        "pitch": [0, 0.75],
+        "speed": [0.06, 2],
+        "roll": [0, 1],
+        "yaw": [0, 1],
+        "pitch": [0, 1],
     },
     "hardstops": {
         "axes": 0.1
@@ -212,18 +213,18 @@ class JoystickHandler:
                 # Handles the hat // Changes joystick sensitivity
                 if self.status[item][0]:
                     self._sensitivity["vx"] = round(min(self._sens_limits["speed"][1], 
-                        self._sensitivity["vx"] + 0.6), 3)
+                        self._sensitivity["vx"] + 0.1), 3)
                     self._sensitivity["vy"] = round(min(self._sens_limits["speed"][1], 
-                        self._sensitivity["vy"] + 0.2), 3)
+                        self._sensitivity["vy"] + 0.1), 3)
                     self._sensitivity["vyaw"] = round(min(self._sens_limits["speed"][1], 
-                        self._sensitivity["vyaw"] + 0.6), 3)
+                        self._sensitivity["vyaw"] + 0.1), 3)
                 elif self.status[item][1]:
                     self._sensitivity["vx"] = round(max(self._sens_limits["speed"][0], 
-                        self._sensitivity["vx"] - 0.6), 3)
+                        self._sensitivity["vx"] - 0.1), 3)
                     self._sensitivity["vy"] = round(max(self._sens_limits["speed"][0], 
-                        self._sensitivity["vy"] - 0.2), 3)
+                        self._sensitivity["vy"] - 0.1), 3)
                     self._sensitivity["vyaw"] = round(max(self._sens_limits["speed"][0], 
-                        self._sensitivity["vyaw"] - 0.6), 3)
+                        self._sensitivity["vyaw"] - 0.1), 3)
 
                 if self.status[item][2]:
                     self._sensitivity["roll"] = round(min(self._sens_limits["roll"][1], 

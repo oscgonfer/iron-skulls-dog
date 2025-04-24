@@ -56,7 +56,7 @@ INCOMING_TOPICS = {
 }
 
 ## Outgoing topics
-
+    
 STATE_FILTER = f"{OUT_FILTER}/state/#"
 STATE_TOPIC = STATE_FILTER.replace("/#","")
 
@@ -65,4 +65,9 @@ MODE_TOPIC = MODE_FILTER.replace("/#","")
 
 RESPONSE_FILTER = f"{OUT_FILTER}/response/#"
 RESPONSE_TOPIC = RESPONSE_FILTER.replace("/#","")
+
+MPC_FILTER = f"{OUT_FILTER}/mpc/#"
+MPC_TOPIC = MPC_FILTER.replace("/#","")
+
+# TODO Make something to add who listens where here?
 # ---------------------------------------------------

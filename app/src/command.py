@@ -22,11 +22,74 @@ class DogState(IntEnum):
     AI_WALKSTAIR=18 # AI WalkStair mode
     AI_WALKUPRIGHT=19 # AI WalkUpRight mode
     AI_CROSSSTEP=20 # AI CrossStep mode
+    AI_WTF=21
 
 class DogMode(IntEnum):
     NORMAL=0
     ADVANCED=1
     AI=2
+
+CMD_LIMITS = {
+    "MOVE": { 
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"}, 
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"}, 
+        "pitch": {"range": [-0.2, 0.2], "mpc_key": "FADER_7"} # Divided by 4
+    },
+    "STANDING": {
+        "roll": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
+        "pitch": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
+        "yaw": {"range": [-0.6, 0.6], "mpc_key": "FADER_7"}
+    },
+    "MOVING": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "pitch": {"range": [-0.2, 0.2], "mpc_key": "FADER_7"} # Divided by 4
+    },
+    "AI_AGILE": {
+        "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"}, # Not according to documentation
+        "vy": {"range": [-1.4, 1.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-1.8, 1.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_FREEBOUND": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_FREEJUMP": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_FREEAVOID": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_WALKSTAIR": {
+        "vx": {"range": [-1.2, 1.2], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_WALKUPRIGHT": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_CROSSSTEP": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    }
+}
 
 class Command:
     def __init__(self, payload, associated_modes= None, associated_states = None, toggle = False):
@@ -63,10 +126,13 @@ class Command:
         return json.dumps(self.as_dict())
 
 class AudioCommand:
-    def __init__(self, payload):
+    def __init__(self, payload, associated_modes = None, associated_states = None):
         # Exportable
         self.source = payload["source"]
         self.options = payload["options"]
+        # Internal only
+        self.associated_modes = associated_modes
+        self.associated_states = associated_states
 
     def as_dict(self):
         return {

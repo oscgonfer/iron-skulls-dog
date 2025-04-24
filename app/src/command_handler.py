@@ -32,19 +32,19 @@ class CommandHandler:
             except json.decoder.JSONDecodeError:
                 pass
             finally:
-                if source in INCOMING_TOPICS:
-                    if INCOMING_TOPICS[source] == 'async':
+                if source.value in INCOMING_TOPICS:
+                    if INCOMING_TOPICS[source.value] == 'async':
                         await self.handle_async_command(_payload)
-                    elif INCOMING_TOPICS[source] == 'sync':
+                    elif INCOMING_TOPICS[source.value] == 'sync':
                         self.handle_command(_payload)
-                    elif INCOMING_TOPICS[source] == 'capture':
+                    elif INCOMING_TOPICS[source.value] == 'capture':
                         self.handle_capture_command(_payload)
-                    elif INCOMING_TOPICS[source] == 'audio':
+                    elif INCOMING_TOPICS[source.value] == 'audio':
                         await self.handle_audio_command(_payload)
                     else:
                         std_out(f'Unknown handler command')
                 else:
-                    std_out(f'Unknown source {source}')
+                    std_out(f'Unknown source {source.value}')
 
     async def handle_async_command(self, payload):
         # Sport = Async

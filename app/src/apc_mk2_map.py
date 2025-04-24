@@ -22,6 +22,9 @@ pad_commands ={
     10: {'command': PlayDogAudioFile, "topic": AUDIO_TOPIC, 
         "payload": {'audio_file': 'dog-barking'}
         },
+    11: {'command': PlayClientAudioFile, "topic": AUDIO_TOPIC, 
+        "payload": {'audio_file': 'dog-barking.wav'}
+        },
     13: {'command': SwitchTrot, "topic": SPORT_TOPIC},
     14: {'command': SwitchRunning, "topic": SPORT_TOPIC},
     15: {'command': SetObstacleAvoidance, "topic": SPORT_TOPIC},
@@ -41,8 +44,8 @@ pad_commands ={
     25: {'command': Sit, "topic": SPORT_TOPIC},
     26: {'command': RiseSit, "topic": SPORT_TOPIC},
     27: {'command': Stretch, "topic": SPORT_TOPIC},
-    28: {'command': Wallow, "topic": SPORT_TOPIC},
-    29: {'command': Pose, "topic": SPORT_TOPIC},
-    30: {'command': FrontPounce, "topic": SPORT_TOPIC},
+    28: {'command': FrontPounce, "topic": SPORT_TOPIC},
+    29: {'command': Wallow, "topic": SPORT_TOPIC},
+    30: {'command': Pose, "topic": SPORT_TOPIC},
     31: {'command': Scrape, "topic": SPORT_TOPIC}
 }

@@ -252,6 +252,38 @@ if __name__ == "__main__":
                         }
                     }
                 ],
+                "/out/mpc": [
+                    {
+                        'field': "FADER_5.input_state",
+                        'widget': TextDisplay,
+                        'label': 'Velocidad horizontal',
+                        'color_map': {
+                            100: 'red',
+                            60: 'yellow',
+                            0:  'green'
+                        }
+                    },
+                    {
+                        'field': "FADER_6.input_state",
+                        'widget': TextDisplay,
+                        'label': 'Velocidad giro',
+                        'color_map': {
+                            100: 'red',
+                            60: 'yellow',
+                            0:  'green'
+                        }
+                    },
+                    {
+                        'field': "FADER_7.input_state",
+                        'widget': TextDisplay,
+                        'label': 'Velocidad gesto',
+                        'color_map': {
+                            100: 'red',
+                            60: 'yellow',
+                            0:  'green'
+                        }
+                    }
+                ],
                 "/out/state/LF_SPORT_MOD_STATE": [
                     {
                         'field': 'LF_SPORT_MOD_STATE.mode',

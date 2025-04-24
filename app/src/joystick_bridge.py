@@ -35,9 +35,11 @@ from go2_webrtc_driver.constants import *
 from joystick_handler import JoystickHandler
 from mqtt_handler import MQTTHandler
 from dog import DogState
+from apc_mk2_config import *
 
 async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
+    mpc_state = None
 
     while True:
         joystick_status = await joystick_handler.get_item_status()
@@ -49,63 +51,155 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
         except asyncio.QueueEmpty:
             pass
         else:
-            if STATE_TOPIC in source:
+            # Add here topics to subscribe
+            if STATE_TOPIC in source.value:
                 try:
-                    payload = json.loads(data)
+                    state_payload = json.loads(data)
                 except json.decoder.JSONDecodeError:
-                    std_out('Malformed payload. Ignoring')
+                    std_out('Malformed state. Ignoring')
                     pass
                 else:
                     try:
-                        _dog_state = payload['LF_SPORT_MOD_STATE']['mode']
+                        _dog_state = state_payload['LF_SPORT_MOD_STATE']['mode']
                     except:
                         std_out('Payload doesnt contain dog mode')
                         pass
                     else:
                         dog_state = _dog_state
 
+            if MPC_TOPIC in source.value:
+                try:
+                    mpc_payload = json.loads(data)
+                except json.decoder.JSONDecodeError:
+                    std_out('Malformed payload. Ignoring')
+                    pass
+                else:
+                    mpc_state = mpc_payload
+        
+        if dog_state is not None:
+            dog_state_name = None
+            try:
+                dog_state_name = DogState(dog_state).name
+            except:
+                pass
+
         # We are moving the axes
         if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
             std_out ('Movement with axis!')
             match dog_state:
                 case DogState.MOVE | DogState.MOVING | DogState.AI_AGILE | DogState.AI_FREEAVOID | DogState.AI_FREEBOUND | DogState.AI_WALKSTAIR | DogState.AI_FREEJUMP | DogState.AI_WALKUPRIGHT | DogState.AI_CROSSSTEP:
+
                     outgoing_topic = MOVE_TOPIC
 
+                    # TODO make this with modifiers to joystick axes behaviour. 
+                    # This right now mimicks the approach in the bluetooth joystick
                     if not joystick_status["R2"]:
 
-                        vx = round(joystick_status["Axis 1"] * joystick_handler.sensitivity["vx"], 2)
-                        vy = round(joystick_status["Axis 0"] * joystick_handler.sensitivity["vy"], 2)
-                        vz = round(joystick_status["Axis 2"] * joystick_handler.sensitivity["vyaw"], 2)
+                        if mpc_state is not None:
+
+                            vx_mpc_key = CMD_LIMITS[dog_state_name]["vx"]["mpc_key"]
+                            vx_range = map_range(mpc_state[vx_mpc_key]["input_state"], 
+                                APC_MK2_FADER_LIMITS[0], 
+                                APC_MK2_FADER_LIMITS[1], 
+                                0,
+                                # CMD_LIMITS[dog_state_name]["vx"][0],
+                                CMD_LIMITS[dog_state_name]["vx"]["range"][1])
+
+                            vy_mpc_key = CMD_LIMITS[dog_state_name]["vy"]["mpc_key"]
+                            vy_range = map_range(mpc_state[vy_mpc_key]["input_state"], 
+                                APC_MK2_FADER_LIMITS[0], 
+                                APC_MK2_FADER_LIMITS[1], 
+                                0,
+                                # CMD_LIMITS[dog_state_name]["vy"][0],
+                                CMD_LIMITS[dog_state_name]["vy"]["range"][1])
+
+                            vyaw_mpc_key = CMD_LIMITS[dog_state_name]["vyaw"]["mpc_key"]
+                            vyaw_range = map_range(mpc_state[vyaw_mpc_key]["input_state"], 
+                                APC_MK2_FADER_LIMITS[0], 
+                                APC_MK2_FADER_LIMITS[1], 
+                                0,
+                                # CMD_LIMITS[dog_state_name]["vyaw"][0],
+                                CMD_LIMITS[dog_state_name]["vyaw"]["range"][1])
+                        
+                        else:
+                            vx_range = joystick_handler.sensitivity["vx"]
+                            vy_range = joystick_handler.sensitivity["vy"]
+                            vyaw_range = joystick_handler.sensitivity["vyaw"]
                         
                         cmd = Move(
-                            x = vx,
-                            y = vy,
-                            z = vz
+                            x = round(joystick_status["Axis 1"] * vx_range, 2),
+                            y = round(joystick_status["Axis 0"] * vy_range, 2),
+                            z = round(joystick_status["Axis 2"] * vyaw_range, 2)
                         )
 
                         if cmd is not None:
                             std_out (f'Robot command: {cmd.as_dict()}')
                             await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
 
-                    cmd = Euler(
-                        roll = 0,
-                        pitch = round(joystick_status["Axis 3"]\
-                            * joystick_handler.sensitivity["pitch"]/4, 2),
-                        yaw = 0
-                    )
+                    # Emulate the joystick
+                    if joystick_status["Axis 3"]:
+                        if mpc_state is not None:
+                            pitch_mpc_key = CMD_LIMITS[dog_state_name]["pitch"]["mpc_key"]
+                            pitch_range = map_range(mpc_state[pitch_mpc_key]["input_state"], 
+                                APC_MK2_FADER_LIMITS[0], 
+                                APC_MK2_FADER_LIMITS[1], 
+                                0,
+                                # CMD_LIMITS[dog_state_name]["pitch"][0],
+                                CMD_LIMITS[dog_state_name]["pitch"]["range"][1])
+                        else:
+                            pitch_range = joystick_handler.sensitivity["pitch"]/4
+                        
+                        cmd = Euler(
+                            roll = 0,
+                            pitch = round(joystick_status["Axis 3"]\
+                                * pitch_range, 2),
+                            yaw = 0
+                        )
 
-                    if cmd is not None:
-                        std_out (f'Robot command: {cmd.as_dict()}')
-                        await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+                        if cmd is not None:
+                            std_out (f'Robot command: {cmd.as_dict()}')
+                            await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
 
                 case DogState.STANDING:
+                    
+                    if mpc_state is not None:
+
+                        roll_mpc_key = CMD_LIMITS[dog_state_name]["roll"]["mpc_key"]
+                        roll_range = map_range(mpc_state[roll_mpc_key]["input_state"], 
+                            APC_MK2_FADER_LIMITS[0], 
+                            APC_MK2_FADER_LIMITS[1], 
+                            0,
+                            # CMD_LIMITS[dog_state_name]["roll"][0],
+                            CMD_LIMITS[dog_state_name]["roll"]["range"][1])
+
+                        pitch_mpc_key = CMD_LIMITS[dog_state_name]["pitch"]["mpc_key"]
+                        pitch_range = map_range(mpc_state[pitch_mpc_key]["input_state"], 
+                            APC_MK2_FADER_LIMITS[0], 
+                            APC_MK2_FADER_LIMITS[1], 
+                            0,
+                            # CMD_LIMITS[dog_state_name]["pitch"][0],
+                            CMD_LIMITS[dog_state_name]["pitch"]["range"][1])
+
+                        yaw_mpc_key = CMD_LIMITS[dog_state_name]["yaw"]["mpc_key"]
+                        yaw_range = map_range(mpc_state[yaw_mpc_key]["input_state"], 
+                            APC_MK2_FADER_LIMITS[0], 
+                            APC_MK2_FADER_LIMITS[1], 
+                            0,
+                            # CMD_LIMITS[dog_state_name]["yaw"][0],
+                            CMD_LIMITS[dog_state_name]["yaw"]["range"][1])
+                    
+                    else:
+                        roll_range = joystick_handler.sensitivity["roll"]
+                        pitch_range = joystick_handler.sensitivity["pitch"]
+                        yaw_range = joystick_handler.sensitivity["yaw"]
+                    
                     cmd = Euler(
                         roll = round(joystick_status["Axis 0"]\
-                            * joystick_handler.sensitivity["roll"], 2),
+                            * roll_range, 2),
                         pitch = round(joystick_status["Axis 1"]\
-                            * joystick_handler.sensitivity["pitch"], 2),
+                            * pitch_range, 2),
                         yaw = round(joystick_status["Axis 2"]\
-                            * joystick_handler.sensitivity["yaw"], 2)
+                            * yaw_range, 2)
                     )
 
             outgoing_topic = MOVE_TOPIC
@@ -131,11 +225,11 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
 
                         # TODO Could the joystick have associated parameter?
 
-                    # TODO 
-                    # Check DogState for Pose or other toggle commands
-                    # Is there anything reflecting those?
-                    # case DogState.MOVE | DogState.MOVING | DogState.AI:
-                    # Bring from midi-handler the same logic here
+                        # TODO 
+                        # Check DogState for Pose or other toggle commands
+                        # Is there anything reflecting those?
+                        # case DogState.MOVE | DogState.MOVING | DogState.AI:
+                        # Bring from midi-handler the same logic here
 
                         if cmd_class.__name__ in CMD_W_DATA:
                             cmd = cmd_class(True)
@@ -145,10 +239,11 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         outgoing_topic = SPORT_TOPIC
 
         if cmd is not None:
-            std_out (f'Robot command: {cmd.as_dict()}')
+            # std_out (f'Robot command: {cmd.as_dict()}')
             await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
 
-        # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
+        # This sleep is needed to receive mqtt commands. 
+        # Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
 
 async def start_bridge(mqtt_handler = None, joystick = None):
@@ -156,7 +251,8 @@ async def start_bridge(mqtt_handler = None, joystick = None):
     joystick_handler = JoystickHandler(joystick)
 
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(mqtt_handler.bridge_incomming(topic=STATE_FILTER, queue=queue))
+        tg.create_task(mqtt_handler.bridge_incomming(topic=f'{OUT_FILTER}/#', queue=queue))
+        # tg.create_task(mqtt_handler.bridge_incomming(topic=MPC_FILTER, queue=queue))
         tg.create_task(joystick_bridge(joystick_handler=joystick_handler, queue=queue, mqtt_handler = mqtt_handler))
 
 async def main():
