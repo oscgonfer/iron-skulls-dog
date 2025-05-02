@@ -22,11 +22,104 @@ class DogState(IntEnum):
     AI_WALKSTAIR=18 # AI WalkStair mode
     AI_WALKUPRIGHT=19 # AI WalkUpRight mode
     AI_CROSSSTEP=20 # AI CrossStep mode
+    AI_WTF=21
 
 class DogMode(IntEnum):
     NORMAL=0
     ADVANCED=1
     AI=2
+
+# TODO Add here other commands that shouldn't send async while in normal mode
+AVOID_ASYNC = {
+    "normal": [
+        DogState.MOVING
+    ],
+    "advanced": [],
+    "ai": []
+}
+
+CMD_LIMITS = {
+    "MOVE": { 
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"}, 
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"}, 
+        "roll": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    "STANDING": {
+        "vx": {"range": [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
+        "vy": {"range":  [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
+        "vyaw": {"range":  [0, 0], "mpc_key": "FADER_6"}, # No move range in standing
+        "roll": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
+        "pitch": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
+        "yaw": {"range": [-0.6, 0.6], "mpc_key": "FADER_7"}
+    },
+    "MOVING": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    "AI_AGILE": {
+        "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"}, # Not according to documentation
+        "vy": {"range": [-1.4, 1.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-2.3, 2.3], "mpc_key": "FADER_6"}, # Out of limit
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_FREEBOUND": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_FREEJUMP": {
+        "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_FREEAVOID": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_WALKSTAIR": {
+        "vx": {"range": [-1.2, 1.2], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_WALKUPRIGHT": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "AI_CROSSSTEP": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    }
+}
 
 class Command:
     def __init__(self, payload, associated_modes= None, associated_states = None, toggle = False):
@@ -61,6 +154,63 @@ class Command:
 
     def to_json(self):
         return json.dumps(self.as_dict())
+
+class AudioCommand:
+    def __init__(self, payload, associated_modes = None, associated_states = None):
+        # Exportable
+        self.source = payload["source"]
+        self.options = payload["options"]
+        # Internal only
+        self.associated_modes = associated_modes
+        self.associated_states = associated_states
+
+    def as_dict(self):
+        return {
+            'source': self.source,
+            'options': self.options,            
+        }
+
+    def to_json(self):
+        return json.dumps(self.as_dict())
+
+class PlayDogAudioFile(AudioCommand):
+    """
+    Play an audio file previously uploaded to the dog
+    """
+    def __init__(self, audio_file: str = ''):
+        payload = {
+            "source": "dog_file",
+            "options": {
+                "audio_file": audio_file
+            }
+        }
+        super().__init__(payload)
+
+class PlayClientAudioFile(AudioCommand):
+    """
+    Play an audio file locally in the client
+    """
+    def __init__(self, audio_file: str = ''):
+        payload = {
+            "source": "client_file",
+            "options": {
+                "audio_file": audio_file
+            }
+        }
+        super().__init__(payload)
+
+class StreamAudioFile(AudioCommand):
+    """
+    Play an audio file locally in the client
+    """
+    def __init__(self, audio_stream: str = ''):
+        payload = {
+            "source": "stream_file",
+            "options": {
+                "audio_stream": audio_stream
+            }
+        }
+        super().__init__(payload)
 
 # 1001
 class Damp(Command):
@@ -120,8 +270,8 @@ class StopMove(Command):
             },
             "expect_reply": False,
             "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
+            "post_hook": StandUp(),
+            "additional_wait": 1
         }
         super().__init__(payload)
 
@@ -236,6 +386,29 @@ class Move(Command):
         }
         super().__init__(payload)
 
+# 1008
+class MoveToPos(Command):
+    """
+    Move to certain position
+    Control the moving speed, the set speed is the speed 
+    of the body coordinate system. It is recommended that you call
+    BalanceStand once before you call Move to ensure that you unlock 
+    and enter a removable state.
+    """
+    def __init__(self, x: float, y: float, z: float):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": json.dumps({"x": x, "y": y, "z": z}),
+                "api_id": 1008
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
 # 1009
 class Sit(Command):
     def __init__(self):
@@ -272,13 +445,103 @@ class RiseSit(Command):
 # TODO ASYNC?
 class SwitchGait(Command):
     """
-
+ 	d: Gait enumeration value, with values ranging from 0 to 4, where 0 is idle, 1 is trot, 2 is trot running, 3 is forward climbing mode, and 4 is reverse climbing mode
     """
     def __init__(self, t: int):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": t},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchIdle(Command):
+    """
+ 	Gait idle
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 0},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchTrot(Command):
+    """
+ 	Gait trot
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 1},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchRunning(Command):
+    """
+ 	Gait trot running
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 2},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchForwardClimb(Command):
+    """
+ 	Gait forward climbing mode
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 3},
+                "api_id": 1011
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+class SwitchBackwardClimb(Command):
+    """
+ 	Gait forward climbing mode
+    """
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": 4},
                 "api_id": 1011
             },
             "expect_reply": False,
@@ -1159,12 +1422,12 @@ class SetObstacleAvoidance(Command):
         payload = {
             "topic": RTC_TOPIC["OBSTACLES_AVOID"],
             "options": {
-                "parameter": {"data": flag},
+                "parameter": {"enable": flag},
                 "api_id": 1001
             },
             "expect_reply": False,
             "update_switcher_mode": False,
-            "post_hook": None,
+            "post_hook": GetObstacleAvoidance(),
             "additional_wait": 0
         }
         super().__init__(payload, toggle=True)

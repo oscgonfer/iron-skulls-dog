@@ -16,7 +16,7 @@ class MQTTHandler(object):
                     std_out(f'Subscribing to {topic}', priority=True)
                     await client.subscribe(topic)
                     async for message in client.messages:
-                        await queue.put((topic, message.payload))
+                        await queue.put((message.topic, message.payload))
             except aiomqtt.MqttError:
                 std_out(f"Connection lost; Reconnecting in {self.reconnect_interval} seconds ...")
                 await asyncio.sleep(self.reconnect_interval)

@@ -1,4 +1,5 @@
 import asyncio
+from tools import std_out
 
 async def subprocess_run(cmd: str):
     proc = await asyncio.create_subprocess_shell(
@@ -9,8 +10,8 @@ async def subprocess_run(cmd: str):
 
     stdout, stderr = await proc.communicate()
 
-    print(f'[{cmd!r} exited with {proc.returncode}]')
+    std_out(f'[{cmd!r} exited with {proc.returncode}]')
     if stdout:
-        print(f'[stdout]\n{stdout.decode()}')
+        std_out(f'[stdout]\n{stdout.decode()}')
     if stderr:
-        print(f'[stderr]\n{stderr.decode()}')
+        std_out(f'[stderr]\n{stderr.decode()}')

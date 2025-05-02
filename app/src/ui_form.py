@@ -26,17 +26,23 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(993, 759)
+
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.pushButton = QPushButton(self.centralwidget)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setGeometry(QRect(10, 64, 141, 31))
-        self.plainTextEdit = QPlainTextEdit(self.centralwidget)
-        self.plainTextEdit.setObjectName(u"plainTextEdit")
-        self.plainTextEdit.setGeometry(QRect(10, 100, 341, 171))
-        self.pushButton_2 = QPushButton(self.centralwidget)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-        self.pushButton_2.setGeometry(QRect(10, 280, 341, 31))
+
+        # Connect button
+        self.pushButton_connect = QPushButton(self.centralwidget)
+        self.pushButton_connect.setObjectName(u"pushButton")
+        self.pushButton_connect.setGeometry(QRect(10, 64, 141, 31))
+        # Space for log output
+        self.logger = QPlainTextEdit(self.centralwidget)
+        self.logger.setObjectName(u"plainTextEdit")
+        self.logger.setGeometry(QRect(10, 100, 341, 171))
+        self.logger.setReadOnly(True)
+
+        self.pushButton_stop = QPushButton(self.centralwidget)
+        self.pushButton_stop.setObjectName(u"pushButton_stop")
+        self.pushButton_stop.setGeometry(QRect(10, 280, 341, 31))
         self.checkBox = QCheckBox(self.centralwidget)
         self.checkBox.setObjectName(u"checkBox")
         self.checkBox.setGeometry(QRect(270, 70, 82, 23))
@@ -136,8 +142,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Connect", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Stop", None))
+        self.pushButton_connect.setText(QCoreApplication.translate("MainWindow", u"Connect", None))
+        self.pushButton_stop.setText(QCoreApplication.translate("MainWindow", u"Stop", None))
         self.checkBox.setText(QCoreApplication.translate("MainWindow", u"Dry run", None))
         self.checkBox_2.setText(QCoreApplication.translate("MainWindow", u"Debug", None))
 #if QT_CONFIG(tooltip)

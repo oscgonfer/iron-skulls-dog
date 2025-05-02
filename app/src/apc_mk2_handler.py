@@ -5,7 +5,8 @@ from statemachine import StateMachine, Event
 from statemachine.states import States
 
 from tools import std_out
-from apc_mk2_config import *  
+from apc_mk2_config import *
+from apc_mk2_items import *
 from capture import CaptureAction, CaptureCommand
 import traceback
 
@@ -25,16 +26,20 @@ class APCMK2Handler(StateMachine):
     ev_recording = _.record.to(_.recording)
     ev_finish_recording = _.recording.to(_.normal)
 
+    ev_stop = _.normal.to(_.stop)
+    ev_finish_stop = _.stop.to(_.normal)
+
     _status = {}
 
     _dog_mode = None # DogMode in dog.py Normal, Advance, AI
     _dog_state = None # DogState in dog.py
 
-    def __init__(self, port=MIDI_PORT_NAME):
+    def __init__(self, port=APC_PORT_NAME):
         self.port = port
         self.midi_in, _ = open_midiinput(self.port)
         self.midi_out, _ = open_midioutput(self.port)
         self.midi_in.set_callback(self.message_callback)
+        # TODO Read status of the apc
 
         self.pads = {}
         self.buttons = {}
@@ -52,11 +57,15 @@ class APCMK2Handler(StateMachine):
         self.target_pad = None
         self.locked = False
 
+        for button in self.buttons:
+            if self.buttons[button].action is None: continue
+            if self.buttons[button].action.topic == RESUME_TOPIC:
+                self.buttons[button].press()
+
     def on_transition(self,event_data, event: Event):
         assert event_data.event == event
 
         print (
-
             f"Running {event.name} from {event_data.transition.source.id} to "
             f"{event_data.transition.target.id}"
         )
@@ -70,11 +79,28 @@ class APCMK2Handler(StateMachine):
         self.locked = False
 
     def on_enter_state(self, event, state):
-        if state not in ['normal', 'recording']:
+        if state.name not in ['Normal', 'Recording']:
             self.assign_recordings()
         self.assign_pads()
         # Buttons don't change?
         self.assign_buttons()
+        self.update_lights()
+
+    def after_transition(self, event, state):
+        if state.name == 'Normal':
+            for button in self.buttons:
+                if self.buttons[button].action is None: continue
+                if self.buttons[button].action.topic == RESUME_TOPIC:
+                    self.buttons[button].press()
+                    self.buttons[button].input_state = 127
+        elif state.name == 'Stop':
+            for button in self.buttons:
+                if self.buttons[button].action is None: continue
+                if self.buttons[button].action.topic == STOP_TOPIC:
+                    self.buttons[button].press()
+                    self.buttons[button].input_state = 127
+                    print ('done')
+
         self.update_lights()
 
     def assign_recordings(self):
@@ -86,17 +112,17 @@ class APCMK2Handler(StateMachine):
 
                 self.action_map["preview"]["pads"][item] = APCMK2Action(command='preview', payload=item, atype=APCMK2ActionType.subprocess)
 
-                self.action_map["record"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+                self.action_map["record"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
 
-                self.action_map["recording"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+                self.action_map["recording"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
             else: 
-                self.action_map["normal"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+                self.action_map["normal"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
 
-                self.action_map["preview"]["pads"][item] = APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.unassigned)
+                self.action_map["preview"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
 
-                self.action_map["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+                self.action_map["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), topic=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
 
-                self.action_map["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), payload=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
+                self.action_map["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), topic=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
     
     def assign_pads(self):
         for item in range(APC_MK2_NUM_PADS):
@@ -111,13 +137,14 @@ class APCMK2Handler(StateMachine):
             if item.name not in self.action_map[self.current_state.id]["buttons"]: continue
             action = self.action_map[self.current_state.id]["buttons"][item.name]
             _map = COLOR_EFFECT_MAP["buttons"][self.current_state.id][action.type.name]
+
             self.buttons[item.value] = APCMK2Button(item.value, item.name, action = action, map = _map)
 
     def assign_faders(self):
         for item in APCMK2FaderName:
             if item.name not in self.action_map[self.current_state.id]["faders"]: continue 
             action = self.action_map[self.current_state.id]["faders"][item.name]
-            self.faders[item.value] = APCMK2Fader(item.value, item.name, action = action)
+            self.faders[item.value] = APCMK2Fader(item.value, item.name, fader_defaults[item.name], action = action)
         
     def close(self):
         self.midi_in.close_port()
@@ -211,11 +238,12 @@ class APCMK2Handler(StateMachine):
                     self.action_map["normal"]["pads"][channel]=APCMK2Action(command='play', payload=f'{channel}', atype=APCMK2ActionType.subprocess)
                     self.action_map["preview"]["pads"][channel]=APCMK2Action(command='preview', payload=f'{channel}', atype=APCMK2ActionType.subprocess)
 
-                    self.action_map["record"]["pads"][channel]=APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
-                    self.action_map["recording"]["pads"][channel]=APCMK2Action(command=None, payload=None, atype=APCMK2ActionType.subprocess)
+                    self.action_map["record"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
+                    self.action_map["recording"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
                 
                 elif note == NOTE_OFF and channel == self.target_pad and self.current_state.id == 'recording':
-                    # TODO Sometimes the recording doesn't get stored. Maybe because the 
+
+                    # TODO Sometimes the recording doesn't get stored. Maybe because the thing is busy?
                     self.send('ev_finish_recording')
                     self.pads[channel].release()
                     self.target_pad = None
@@ -231,8 +259,8 @@ class APCMK2Handler(StateMachine):
         update_state = False
         # Careful when printing payloads, they don't always have names
         # print ('Triggered action:', action.payload.name)
+        std_out ('Current state:', self.current_state)
         if action.type == APCMK2ActionType.apc_mode_toggle:
-            print ('Current state:', self.current_state)
             if note == NOTE_ON:
                 self.buttons[channel].press()
                 self.send('ev_'+action.payload.name)
@@ -241,21 +269,24 @@ class APCMK2Handler(StateMachine):
                 self.buttons[channel].release()
                 self.send('ev_finish_'+action.payload.name)
                 
-            print ('Updated state:', self.current_state)
-
         elif action.type == APCMK2ActionType.apc_mode_change:
-            print ('Current state:', self.current_state)
             if note == NOTE_ON:
-                print ('Sending', action.payload.name)
+                std_out ('Sending', action.payload.name)
                 self.send('ev_'+action.payload.name)
                 # Workaround because buttons don't have a mapping
                 if action.payload.name == 'normal':
                     self.buttons[channel].release()
                 else:
                     self.buttons[channel].press()
-                
-            print ('Updated state:', self.current_state)
-                        
+        
+        elif action.type == APCMK2ActionType.command:
+            if note == NOTE_ON:
+                if action.topic == RESUME_TOPIC:
+                    self.send('ev_finish_'+action.payload.name)
+                elif action.topic == STOP_TOPIC:
+                    self.send('ev_'+action.payload.name)
+
+        std_out ('Updated state:', self.current_state)
         self.update_lights()
     
     def reset_triggers(self):
@@ -274,13 +305,14 @@ class APCMK2Handler(StateMachine):
         note = message[0]
         channel = int(message[1])
         value = int(message[2])
-
+        
         if note == CONTROLLER_CHANGE:
             # Fader change
             if channel in self.faders:
                 self.faders[channel].input_state = value
                 self.faders[channel].trigger = True
                 # print (f'Fader: ', self.faders[channel].name, self.faders[channel].input_state)
+        
         elif note == NOTE_OFF or note == NOTE_ON:
             # Pad or button pressed
             if channel in self.pads:

@@ -14,63 +14,27 @@ from mqtt_handler import MQTTHandler
 from subprocess_run import subprocess_run
 from media_track import Track
 import time
-# import subprocess
 
-# TODO
-# --------
-# Captures (DONE)
-# --------
-# Interface for editing
-# name and description
-# interface to edit name, descriptions and add tracks
-# add slider for delaying the music
-# show name and description for captures on preview
-# Not lock if there is no command
-
-# -----
-# Music
-# -----
-# drum - pipe to synth (intro)
-# include all sensors
-
-# -----
-# Modes
-# -----
-# Change mapping of limits on each command based on the ai mode
-# Change commands available on each mode?
-
-# -----
-# ObstacleAvoidance (TO TEST)
-# -----
-# Command
-
-# -----
-# Led color 
-# -----
-# Change color on the arrows
-
-# Interfaz para batería y carga
-
-async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
+async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
     dog_mode = None
     medias = {}
-
-    cmd = GetMotionSwitcherStatus()
+    state_payload = {}
+    cmd = GetMotionSwitcherStatus()    
     outgoing_topic = SPORT_TOPIC
 
     while True:
-        
         # Get status of midi
-        midi_values = midi_handler.status.copy()
-        midi_handler.reset_triggers()
+        midi_values = apc_handler.status.copy()
+        apc_handler.reset_triggers()
         
         try:
             source, data = queue.get_nowait()
         except asyncio.QueueEmpty:
             pass
         else:
-            if STATE_TOPIC in source:
+            # Add here topics to subscribe
+            if STATE_TOPIC in source.value:
                 try:
                     payload = json.loads(data)
                 except json.decoder.JSONDecodeError:
@@ -84,8 +48,8 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                         pass
                     else:
                         dog_state = _dog_state
-                        midi_handler.update_dog_state(dog_state)
-            if MODE_TOPIC in source:
+                        apc_handler.update_dog_state(dog_state)
+            if MODE_TOPIC in source.value:
                 try:
                     payload = json.loads(data)
                 except json.decoder.JSONDecodeError:
@@ -98,20 +62,20 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                         std_out('Payload doesnt contain dog mode')
                         pass
                     else:
-                        dog_mode = _dog_mode                
-                        midi_handler.update_dog_mode(dog_mode)
+                        dog_mode = _dog_mode
+                        apc_handler.update_dog_mode(dog_mode)
         
         # Check status of medias
         medias_to_remove = []
 
         for media in medias:
             if medias[media].is_playing:
-                midi_handler.pads[media].press()
-                midi_handler.update_lights()
+                apc_handler.pads[media].press()
+                apc_handler.update_lights()
             else: 
                 medias_to_remove.append(media)
-                midi_handler.pads[media].release()
-                midi_handler.update_lights()
+                apc_handler.pads[media].release()
+                apc_handler.update_lights()
                 std_out(f'Media playing done: {media}')
 
         [medias.pop(rmmedia, None) for rmmedia in medias_to_remove]
@@ -131,34 +95,48 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
 
                         if 'FADER' in str(_mi['name']):
                             cmd = action.command(_mi['input_state'], 
-                            value_range = APC_MK2_FADER_LIMITS)
+                                value_range = APC_MK2_FADER_LIMITS)
                         else:
                             if _mi['input_state']:
-                                cmd = action.command()
+                                
+                                # For cases where there is a payload.
+                                # TODO for now, there is no case where the command has a payload and is also a toggle (payloads are only needed for audio commands)
+                                if action.payload is not None:
+                                    cmd = action.command(**action.payload)
+                                else:
+                                # Instantiate one dummy command in case is a toggle
+                                    cmd = action.command()
 
-                                if cmd.toggle:
-                                    # print ('Toggle command!')
-                                    if cmd.associated_states is not None:
-                                        # TODO This can't be working... should check for list
-                                        # if dog_state == cmd.associated_states:
-                                        if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
-                                            cmd = action.command(False)
-                                # else:
-                                    # print ('non-toggle command!')
+                                    if cmd.toggle:
+                                        # print ('Toggle command!')
+                                        if cmd.associated_states is not None:
+                                            if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
+                                                cmd = action.command(flag=False)
+                                    else:
+                                        # Needed to avoid sending the same command many times
+                                        if cmd.associated_states is not None:
+                                            if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
+                                                cmd = None
+                            else:
+
+                                if action.topic in [RESUME_TOPIC, STOP_TOPIC]:
+                                # For safety commands
+                                    cmd = action.command()
                         
-                        outgoing_topic = action.payload
+                        outgoing_topic = action.topic
+                    
                     # Dog mode toggles go here
                     elif action.type == APCMK2ActionType.dog_mode_toggle and action.command is not None:
                         if _mi['input_state']:
                             cmd = action.command()
 
-                        outgoing_topic = action.payload
+                        outgoing_topic = action.topic
 
                     # Capture commands go here
                     elif action.type == APCMK2ActionType.capture:
                         if _mi['input_state']:
                             cmd = action.command # Capture commands are not callable
-                        outgoing_topic = action.payload
+                        outgoing_topic = action.topic
 
                     # Subprocess commands go here
                     elif action.type == APCMK2ActionType.subprocess:
@@ -189,10 +167,12 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
 
                                                 if medias[midi_item] is not None:
                                                     medias[midi_item].play()
+                                                    # Wait for media to play
+                                                    # TODO Is this dangerous?
                                                     while not medias[midi_item].is_playing:
                                                         time.sleep(0.05)
-                                                    midi_handler.pads[midi_item].press()
-                                                    midi_handler.update_lights()
+                                                    apc_handler.pads[midi_item].press()
+                                                    apc_handler.update_lights()
                                                 else:
                                                     std_out('Track could not be loaded')
                                             else:
@@ -202,18 +182,18 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                                             std_out('Track doesnt exist')
 
                                 if capture['commands']:
-                                    midi_handler.pads[midi_item].press()
-                                    midi_handler.update_lights()
-                                    midi_handler.lock()
+                                    apc_handler.pads[midi_item].press()
+                                    apc_handler.update_lights()
+                                    apc_handler.lock()
 
                                     std_out ('Play capture started')
-                                    # subprocess.call(['python', command,'--capture-file', capture_path])
+                                    # TODO Can we stop this?
                                     await subprocess_run(' '.join(['python', command,'--capture-file', capture_path]))
                                     std_out ('Play capture done')
 
-                                    midi_handler.pads[midi_item].release()
-                                    midi_handler.unlock()
-                                    midi_handler.update_lights()
+                                    apc_handler.pads[midi_item].release()
+                                    apc_handler.unlock()
+                                    apc_handler.update_lights()
                             
                             elif action.command == 'preview':
                                 print ('Preview capture requested')
@@ -223,8 +203,9 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                                 std_out (f"\n\tDescription: {capture['metadata']['description']}\n", priority = True, timestamp = False)
                                 if 'track' in capture['metadata']:
                                     std_out (f"\tTrack file: {capture['metadata']['track']['path']}\n", priority = True, timestamp = False)
+        
         if cmd is not None:
-            if midi_handler.current_state.id != 'preview':
+            if apc_handler.current_state.id != 'preview':
                 std_out (f'Command: {cmd.as_dict()}')
                 await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
             else:
@@ -232,25 +213,46 @@ async def midi_bridge(midi_handler=None, queue=None, mqtt_handler=None):
                 print ()
                 std_out (f'{action.command.__doc__}', priority = True, timestamp = False)
                 print ()
+
+        # TODO Announce mk2 faders
+        # TODO Remove? Is this a problema?
+        _state_payload = {}
+        for item in midi_values:
+            action = midi_values[item]['action']
+            # TODO only for unassigned commands
+            if action.command is not None: 
+                continue
+            st = midi_values[item]['name']
+            if type(st) != str: continue
+            if 'FADER' not in st: continue
+            pl = {
+                'channel': midi_values[item]['channel'], 
+                'input_state': midi_values[item]['input_state']
+            }
+            _state_payload[st] = pl
+        
+        if _state_payload != state_payload:
+            state_payload = _state_payload
+            await mqtt_handler.publish(topic=f'{MPC_TOPIC}', payload=json.dumps(state_payload))
         
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
         cmd = None
 
-async def start_bridge(mqtt_handler = None, midi_handler = None):
+async def start_bridge(mqtt_handler = None, apc_handler = None):
     queue = asyncio.Queue()
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(mqtt_handler.bridge_incomming(topic=STATE_FILTER, queue=queue))
         tg.create_task(mqtt_handler.bridge_incomming(topic=MODE_FILTER, queue=queue))
         tg.create_task(mqtt_handler.bridge_incomming(topic=CAPTURE_FILTER, queue=queue))
-        tg.create_task(midi_bridge(midi_handler=midi_handler, queue=queue, mqtt_handler = mqtt_handler))
+        tg.create_task(apc_bridge(apc_handler=apc_handler, queue=queue, mqtt_handler = mqtt_handler))
 
 async def main():
     std_out('Starting midi coroutine...', priority=True)
     coroutine = await start_bridge(
         mqtt_handler = mqtt_handler,
-        midi_handler = midi_handler)
+        apc_handler = apc_handler)
 
     loop = asyncio.get_event_loop()
 
@@ -262,12 +264,12 @@ async def main():
         
         pass
     finally:
-        midi_handler.close()
+        apc_handler.close()
         raise SystemExit()
 
 if __name__ == '__main__':
     # Start Midi handler
-    midi_handler = APCMK2Handler()
+    apc_handler = APCMK2Handler()
 
     # MQTT Handler
     mqtt_handler = MQTTHandler(broker=MQTT_BROKER)

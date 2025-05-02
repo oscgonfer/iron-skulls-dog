@@ -7,20 +7,20 @@ import pygame
 # JOYSTICK
 # 8bitDo SN30Pro+ buttons and commands
 BUTTONS = {
-    0: {"name": "B", "command": StandUp},
-    1: {"name": "A", "command": StandDown},
-    2: {"name": "X", "command": BalanceStand},
-    3: {"name": "Y", "command": Pose},
-    4: {"name": "STAR", "command": None},
-    5: {"name": "L1", "command": None},
-    6: {"name": "R1", "command": None},
-    7: {"name": "L2", "command": None},
-    8: {"name": "R2", "command": None},
-    9: {"name": "SELECT", "command": None},
-    10: {"name": "START", "command": StopMove},
-    11: {"name": "HEART", "command": RecoveryStand},
-    12: {"name": "LBALL", "command": None},
-    13: {"name": "RBALL", "command": None},
+    0: {"name": "B", "command": StandUp, "behaviour": "rising_edge"},
+    1: {"name": "A", "command": StandDown, "behaviour": "rising_edge"},
+    2: {"name": "X", "command": BalanceStand, "behaviour": "rising_edge"},
+    3: {"name": "Y", "command": Pose, "behaviour": "rising_edge"},
+    4: {"name": "STAR", "command": None, "behaviour": "rising_edge"},
+    5: {"name": "L1", "command": None, "behaviour": "pressed"},
+    6: {"name": "R1", "command": None, "behaviour": "pressed"},
+    7: {"name": "L2", "command": None, "behaviour": "pressed"},
+    8: {"name": "R2", "command": None, "behaviour": "pressed"},
+    9: {"name": "SELECT", "command": None, "behaviour": "rising_edge"},
+    10: {"name": "START", "command": StopMove, "behaviour": "rising_edge"},
+    11: {"name": "HEART", "command": RecoveryStand, "behaviour": "rising_edge"},
+    12: {"name": "LBALL", "command": None, "behaviour": "rising_edge"},
+    13: {"name": "RBALL", "command": None, "behaviour": "rising_edge"},
 }
 
 AXES = {
@@ -40,21 +40,23 @@ BALLS = {
 }
 
 JOYSTICK_DEFAULTS = {
+    # TODO - this shouldn't be static, but per mode
     "sensitivity": {
-        "vxy": 0.6,
-        "vyaw": 1.2,
+        "vx": 1,
+        "vy": 0.4,
+        "vyaw": 0.8,
         "roll": 0.75,
         "yaw": 0.6,
         "pitch": 0.75
     },
     "sensitivity_limits": {
-        "speed": [0, 1],
-        "roll": [0, 0.75],
-        "yaw": [0, 0.6],
-        "pitch": [0, 0.75],
+        "speed": [0.06, 2],
+        "roll": [0, 1],
+        "yaw": [0, 1],
+        "pitch": [0, 1],
     },
     "hardstops": {
-        "axes": 0.06
+        "axes": 0.1
     }
 }
 # ---------------------------------------------------
@@ -72,12 +74,13 @@ class JoystickItem:
         self.enable = True
 
 class Button(JoystickItem):
-    def __init__(self, name, index=None, command=None):
+    def __init__(self, name, index=None, command=None, behaviour='rising_edge'):
         super().__init__(name, index)
         self.command = command
         self._pressed = False
         self._rising_edge = False
         self._falling_edge = False
+        self.behaviour = behaviour
 
     def press(self):
         if self._pressed: self._rising_edge = False
@@ -135,7 +138,8 @@ class JoystickHandler:
         self.joystick = joystick
 
         self.buttons = {
-            BUTTONS[num_item]["name"]: Button(BUTTONS[num_item]["name"], num_item, BUTTONS[num_item]["command"])
+            BUTTONS[num_item]["name"]: Button(name=BUTTONS[num_item]["name"], index=num_item, \
+                command = BUTTONS[num_item]["command"],behaviour = BUTTONS[num_item]["behaviour"])
             for num_item in range(self.joystick.get_numbuttons())
         }
         self.axes = {
@@ -155,9 +159,6 @@ class JoystickHandler:
     async def get_item_status(self):
         # This is necessary to smooth things up
         pygame.event.pump()
-        # for item in range(self.joystick.get_numbuttons()):
-        #     print (item, self.joystick.get_button(item))
-        # print ('--')
 
         if self.joystick is not None:
 
@@ -193,9 +194,9 @@ class JoystickHandler:
                     self.hats[hat.name].items[2].release()
                     self.hats[hat.name].items[3].release()
 
-        self.update_status()
-        self.update_sensitivity()
-        return self.status
+        return self.update_status()
+        # self.update_sensitivity()
+        # return self.status
 
     def update_sensitivity(self):
         # We are moving the hat
@@ -208,13 +209,17 @@ class JoystickHandler:
 
                 # Handles the hat // Changes joystick sensitivity
                 if self.status[item][0]:
-                    self._sensitivity["vxy"] = round(min(self._sens_limits["speed"][1], 
-                        self._sensitivity["vxy"] + 0.1), 3)
+                    self._sensitivity["vx"] = round(min(self._sens_limits["speed"][1], 
+                        self._sensitivity["vx"] + 0.1), 3)
+                    self._sensitivity["vy"] = round(min(self._sens_limits["speed"][1], 
+                        self._sensitivity["vy"] + 0.1), 3)
                     self._sensitivity["vyaw"] = round(min(self._sens_limits["speed"][1], 
                         self._sensitivity["vyaw"] + 0.1), 3)
                 elif self.status[item][1]:
-                    self._sensitivity["vxy"] = round(max(self._sens_limits["speed"][0], 
-                        self._sensitivity["vxy"] - 0.1), 3)
+                    self._sensitivity["vx"] = round(max(self._sens_limits["speed"][0], 
+                        self._sensitivity["vx"] - 0.1), 3)
+                    self._sensitivity["vy"] = round(max(self._sens_limits["speed"][0], 
+                        self._sensitivity["vy"] - 0.1), 3)
                     self._sensitivity["vyaw"] = round(max(self._sens_limits["speed"][0], 
                         self._sensitivity["vyaw"] - 0.1), 3)
 
@@ -242,12 +247,14 @@ class JoystickHandler:
             self._status[axe.name] = axe.position
 
         for button in self.buttons.values():
-            self._status[button.name] = button.rising_edge
-            # self._status[button.name] = button.pressed
+            if button.behaviour == "rising_edge":
+                self._status[button.name] = button.rising_edge
+            elif button.behaviour == "pressed":
+                self._status[button.name] = button.pressed
 
         for hat in self.hats.values():
             self._status[hat.name] = hat.rising_edge
-
+        
         return self._status
 
     @property

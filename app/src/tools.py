@@ -3,6 +3,8 @@ import datetime
 import sys
 import asyncio
 import json
+from functools import reduce
+import operator
 
 def std_out(msg, priority=False, timestamp = TIMESTAMP):
     if DEBUG or priority:
@@ -23,6 +25,35 @@ async def tcp_state_client(message):
 
     writer.close()
     await writer.wait_closed()
+
+def get_by_path(root, items):
+    """Access a nested object in root by item sequence."""
+    if '*' in items:
+        indexes = [i for i, x in enumerate(items) if x == "*"]
+        
+        if len(indexes)>1: return None # Too complex
+        result = []
+
+        r = reduce(operator.getitem, items[0:indexes[0]], root)
+        for item in r:
+
+            if type(items[indexes[0]+1]) != list:
+                gitem = [items[indexes[0]+1]]
+            else:
+                gitem = items[indexes[0]+1]
+            result.append(reduce(operator.getitem, gitem, item))
+        
+        return result
+    else:
+        return reduce(operator.getitem, items, root)
+
+def set_by_path(root, items, value):
+    """Set a value in a nested object in root by item sequence."""
+    get_by_path(root, items[:-1])[items[-1]] = value
+
+def del_by_path(root, items):
+    """Delete a key-value in a nested object in root by item sequence."""
+    del get_by_path(root, items[:-1])[items[-1]]
 
 def display_data(message):
 

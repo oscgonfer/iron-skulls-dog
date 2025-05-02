@@ -13,7 +13,7 @@ done
 EMAIL=$email
 
 echo 'Obtaining token...'
-accessToken=$(curl -X POST https://global-robot-api.unitree.com/login/email -d "email=$EMAIL&password=$HASH" | jq .data.accessToken | tr -d '"')
+accessToken=$(curl -X POST https://global-robot-api.unitree.com/login/email -d "email=$EMAIL&password=$HASH" -A "PostmanRuntime/7.43.3"| jq .data.accessToken | tr -d '"')
 go2IP=$(getent ahostsv4 Unitree.local | awk '{print $1}' | sort | uniq)
 
 echo -n "GO2_TOKEN=$accessToken" > app/src/.env

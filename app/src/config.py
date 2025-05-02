@@ -39,20 +39,26 @@ AVOIDANCE_TOPIC = AVOIDANCE_FILTER.replace("/#","")
 CAPTURE_FILTER = f"{CMD_FILTER}/capture/#"
 CAPTURE_TOPIC = CAPTURE_FILTER.replace("/#","")
 
-# SAFE_FILTER = f"{PRE_FILTER}/safety/#"
-# SAFE_TOPIC = SAFE_FILTER.replace("/#","")
+AUDIO_FILTER = f"{CMD_FILTER}/audio/#"
+AUDIO_TOPIC = AUDIO_FILTER.replace("/#","")
+
+SAFE_FILTER = f"{CMD_FILTER}/safety/#"
+RESUME_TOPIC = SAFE_FILTER.replace("#","resume")
+STOP_TOPIC = SAFE_FILTER.replace("#","stop")
 
 INCOMING_TOPICS = {
+    RESUME_TOPIC: 'async',
+    STOP_TOPIC: 'async',
     SPORT_TOPIC: 'async',
     MOVE_TOPIC: 'sync',
     SWITCHER_TOPIC: 'async',
     CAPTURE_TOPIC: 'capture',
     VUI_TOPIC: 'sync',
-    AVOIDANCE_TOPIC: 'async'
+    AVOIDANCE_TOPIC: 'async',
+    AUDIO_TOPIC: 'audio'
 }
 
 ## Outgoing topics
-
 STATE_FILTER = f"{OUT_FILTER}/state/#"
 STATE_TOPIC = STATE_FILTER.replace("/#","")
 
@@ -61,4 +67,9 @@ MODE_TOPIC = MODE_FILTER.replace("/#","")
 
 RESPONSE_FILTER = f"{OUT_FILTER}/response/#"
 RESPONSE_TOPIC = RESPONSE_FILTER.replace("/#","")
+
+MPC_FILTER = f"{OUT_FILTER}/mpc/#"
+MPC_TOPIC = MPC_FILTER.replace("/#","")
+
+# TODO Make something to add who listens where here?
 # ---------------------------------------------------
