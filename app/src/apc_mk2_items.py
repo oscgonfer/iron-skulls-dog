@@ -32,6 +32,18 @@ class APCMK2FaderName(Enum):
     FADER_8 = 0x37
     FADER_9 = 0x38
 
+fader_defaults = {
+    "FADER_1": 0,
+    "FADER_2": 0,
+    "FADER_3": 0,
+    "FADER_4": 0,
+    "FADER_5": 50,
+    "FADER_6": 50,
+    "FADER_7": 50,
+    "FADER_8": 0,
+    "FADER_9": 0
+}
+
 class APCMK2ButtonEffect(Enum):
     OFF = 0x00
     ON = 0x01
@@ -87,6 +99,10 @@ class APCMK2Mode(Enum):
     # Trigger: SHIFT (stays pressed)
     # Shows what they pad contains
     preview = 4
+    # Locked mode
+    # Trigger: Dog stop. Gets out with another button
+    # Makes the dog stop move and lock
+    stop = 5
 
 class APCMK2ActionType(Enum):
     null = 0
@@ -97,6 +113,7 @@ class APCMK2ActionType(Enum):
     subprocess = 6 # External subprocess (for instance, play_capture.py)
     capture = 7
     unassigned = 8 # Unassigned
+    dog_safety = 9 # Dog safety
 
 class APCMK2ActionStatus(Enum):
     idle = 0
@@ -127,17 +144,17 @@ class APCMK2Action():
 #             return o.as_dict()
 
 class APCMK2Input():
-    def __init__(self, channel: int, name: str, action: APCMK2Action = None):
+    def __init__(self, channel: int, name: str, input_state: int = 0, action: APCMK2Action = None):
         self.channel = channel
         self.name = name
-        self.input_state: int = 0
+        self.input_state: int = input_state
         self.trigger: bool = False
         self.action = action
 
 class APCMK2Pad(APCMK2Input):
     def __init__(self, channel, name, action: APCMK2Action = None, map: {} = None):
         self.map = map
-        super().__init__(channel, name, action)
+        super().__init__(channel, name, action = action)
         self.release()
     
     def press(self):
@@ -162,10 +179,10 @@ class APCMK2Pad(APCMK2Input):
         }
     
 class APCMK2Button(APCMK2Input):
-    def __init__(self, channel, name, action: APCMK2Action = None, map: {} = None):
+    def __init__(self, channel, name, input_state: int = 0, action: APCMK2Action = None, map: {} = None):
         self.map = map
         
-        super().__init__(channel, name, action)
+        super().__init__(channel, name, input_state=input_state, action = action)
         self.release()
     
     def press(self):
@@ -187,8 +204,8 @@ class APCMK2Button(APCMK2Input):
         }
 
 class APCMK2Fader(APCMK2Input):
-    def __init__(self, channel, name, action: APCMK2Action = None):
-        super().__init__(channel, name, action)
+    def __init__(self, channel, name, input_state: int= 0, action: APCMK2Action = None):
+        super().__init__(channel, name, input_state, action = action)
 
     def to_dict(self):
         return {

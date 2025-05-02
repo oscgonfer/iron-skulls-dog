@@ -159,9 +159,6 @@ class JoystickHandler:
     async def get_item_status(self):
         # This is necessary to smooth things up
         pygame.event.pump()
-        # for item in range(self.joystick.get_numbuttons()):
-        #     print (item, self.joystick.get_button(item))
-        # print ('--')
 
         if self.joystick is not None:
 
@@ -197,9 +194,9 @@ class JoystickHandler:
                     self.hats[hat.name].items[2].release()
                     self.hats[hat.name].items[3].release()
 
-        self.update_status()
-        self.update_sensitivity()
-        return self.status
+        return self.update_status()
+        # self.update_sensitivity()
+        # return self.status
 
     def update_sensitivity(self):
         # We are moving the hat

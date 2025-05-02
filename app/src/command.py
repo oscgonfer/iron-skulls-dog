@@ -29,14 +29,28 @@ class DogMode(IntEnum):
     ADVANCED=1
     AI=2
 
+# TODO Add here other commands that shouldn't send async while in normal mode
+AVOID_ASYNC = {
+    "normal": [
+        DogState.MOVING
+    ],
+    "advanced": [],
+    "ai": []
+}
+
 CMD_LIMITS = {
     "MOVE": { 
         "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
         "vy": {"range": [-1, 1], "mpc_key": "FADER_5"}, 
         "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"}, 
-        "pitch": {"range": [-0.2, 0.2], "mpc_key": "FADER_7"} # Divided by 4
+        "roll": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
     },
     "STANDING": {
+        "vx": {"range": [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
+        "vy": {"range":  [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
+        "vyaw": {"range":  [0, 0], "mpc_key": "FADER_6"}, # No move range in standing
         "roll": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
         "pitch": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
         "yaw": {"range": [-0.6, 0.6], "mpc_key": "FADER_7"}
@@ -45,48 +59,64 @@ CMD_LIMITS = {
         "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
         "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
-        "pitch": {"range": [-0.2, 0.2], "mpc_key": "FADER_7"} # Divided by 4
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
     },
     "AI_AGILE": {
         "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"}, # Not according to documentation
         "vy": {"range": [-1.4, 1.4], "mpc_key": "FADER_5"},
-        "vyaw": {"range": [-1.8, 1.8], "mpc_key": "FADER_6"},
+        "vyaw": {"range": [-2.3, 2.3], "mpc_key": "FADER_6"}, # Out of limit
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "AI_FREEBOUND": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "AI_FREEJUMP": {
-        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "AI_FREEAVOID": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "AI_WALKSTAIR": {
         "vx": {"range": [-1.2, 1.2], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "AI_WALKUPRIGHT": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "AI_CROSSSTEP": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     }
 }
@@ -240,8 +270,8 @@ class StopMove(Command):
             },
             "expect_reply": False,
             "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
+            "post_hook": StandUp(),
+            "additional_wait": 1
         }
         super().__init__(payload)
 
@@ -364,14 +394,6 @@ class MoveToPos(Command):
     of the body coordinate system. It is recommended that you call
     BalanceStand once before you call Move to ensure that you unlock 
     and enter a removable state.
-    Value range (Normal):
-        Vx: [-0.6~0.6 ] (m/s)
-        Vy: Value range [-0.4~0.4 ] (m/s) 
-        Vyaw: Value range [-0.8~0.8 ] (rad/s)
-    Value range (AI):
-        Vx: [-0.6~0.6 ] (m/s)
-        Vy: Value range [-0.4~0.4 ] (m/s) 
-        Vyaw: Value range [-0.8~0.8 ] (rad/s)
     """
     def __init__(self, x: float, y: float, z: float):
         payload = {

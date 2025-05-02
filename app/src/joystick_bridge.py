@@ -25,6 +25,7 @@ from config import *
 from command import *
 from tools import std_out
 import asyncio
+import time
 import json
 import os
 import pygame
@@ -36,6 +37,19 @@ from joystick_handler import JoystickHandler
 from mqtt_handler import MQTTHandler
 from dog import DogState
 from apc_mk2_config import *
+
+def get_limit(dog_state_name, param, mpc_state):
+    if dog_state_name not in CMD_LIMITS:
+        return 0
+
+    key = CMD_LIMITS[dog_state_name][param]["mpc_key"]
+    value_range = map_range(mpc_state[key]["input_state"], 
+        APC_MK2_FADER_LIMITS[0], 
+        APC_MK2_FADER_LIMITS[1], 
+        0,
+        # CMD_LIMITS[dog_state_name]["vx"][0],
+        CMD_LIMITS[dog_state_name][param]["range"][1])
+    return value_range
 
 async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
@@ -83,6 +97,24 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
             except:
                 pass
 
+        if mpc_state is not None:
+            roll_range = get_limit(dog_state_name, "roll", mpc_state)
+            pitch_range = get_limit(dog_state_name, "pitch", mpc_state)
+            yaw_range = get_limit(dog_state_name, "yaw", mpc_state)
+
+            vx_range = get_limit(dog_state_name, "vx", mpc_state)
+            vy_range = get_limit(dog_state_name, "vy", mpc_state)
+            vyaw_range = get_limit(dog_state_name, "vyaw", mpc_state)
+
+        else:
+            roll_range = joystick_handler.sensitivity["roll"]/4
+            pitch_range = joystick_handler.sensitivity["pitch"]/4
+            yaw_range = joystick_handler.sensitivity["yaw"]/4
+
+            vx_range = joystick_handler.sensitivity["vx"]
+            vy_range = joystick_handler.sensitivity["vy"]
+            vyaw_range = joystick_handler.sensitivity["vyaw"]
+
         # We are moving the axes
         if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
             std_out ('Movement with axis!')
@@ -94,37 +126,6 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                     # TODO make this with modifiers to joystick axes behaviour. 
                     # This right now mimicks the approach in the bluetooth joystick
                     if not joystick_status["R2"]:
-
-                        if mpc_state is not None:
-
-                            vx_mpc_key = CMD_LIMITS[dog_state_name]["vx"]["mpc_key"]
-                            vx_range = map_range(mpc_state[vx_mpc_key]["input_state"], 
-                                APC_MK2_FADER_LIMITS[0], 
-                                APC_MK2_FADER_LIMITS[1], 
-                                0,
-                                # CMD_LIMITS[dog_state_name]["vx"][0],
-                                CMD_LIMITS[dog_state_name]["vx"]["range"][1])
-
-                            vy_mpc_key = CMD_LIMITS[dog_state_name]["vy"]["mpc_key"]
-                            vy_range = map_range(mpc_state[vy_mpc_key]["input_state"], 
-                                APC_MK2_FADER_LIMITS[0], 
-                                APC_MK2_FADER_LIMITS[1], 
-                                0,
-                                # CMD_LIMITS[dog_state_name]["vy"][0],
-                                CMD_LIMITS[dog_state_name]["vy"]["range"][1])
-
-                            vyaw_mpc_key = CMD_LIMITS[dog_state_name]["vyaw"]["mpc_key"]
-                            vyaw_range = map_range(mpc_state[vyaw_mpc_key]["input_state"], 
-                                APC_MK2_FADER_LIMITS[0], 
-                                APC_MK2_FADER_LIMITS[1], 
-                                0,
-                                # CMD_LIMITS[dog_state_name]["vyaw"][0],
-                                CMD_LIMITS[dog_state_name]["vyaw"]["range"][1])
-                        
-                        else:
-                            vx_range = joystick_handler.sensitivity["vx"]
-                            vy_range = joystick_handler.sensitivity["vy"]
-                            vyaw_range = joystick_handler.sensitivity["vyaw"]
                         
                         cmd = Move(
                             x = round(joystick_status["Axis 1"] * vx_range, 2),
@@ -135,25 +136,22 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         if cmd is not None:
                             std_out (f'Robot command: {cmd.as_dict()}')
                             await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+                        
+                        # While moving, we don't send any Euler
+                        roll_range = 0
+                        yaw_range = 0
+                        if not joystick_status["Axis 3"]:
+                            pitch_range = 0
 
-                    # Emulate the joystick
-                    if joystick_status["Axis 3"]:
-                        if mpc_state is not None:
-                            pitch_mpc_key = CMD_LIMITS[dog_state_name]["pitch"]["mpc_key"]
-                            pitch_range = map_range(mpc_state[pitch_mpc_key]["input_state"], 
-                                APC_MK2_FADER_LIMITS[0], 
-                                APC_MK2_FADER_LIMITS[1], 
-                                0,
-                                # CMD_LIMITS[dog_state_name]["pitch"][0],
-                                CMD_LIMITS[dog_state_name]["pitch"]["range"][1])
-                        else:
-                            pitch_range = joystick_handler.sensitivity["pitch"]/4
+                    if roll_range or pitch_range or yaw_range:
                         
                         cmd = Euler(
-                            roll = 0,
+                            roll = round(joystick_status["Axis 0"]\
+                                * roll_range, 2),
                             pitch = round(joystick_status["Axis 3"]\
                                 * pitch_range, 2),
-                            yaw = 0
+                            yaw = round(joystick_status["Axis 1"]\
+                                * yaw_range, 2)
                         )
 
                         if cmd is not None:
@@ -161,37 +159,6 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                             await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
 
                 case DogState.STANDING:
-                    
-                    if mpc_state is not None:
-
-                        roll_mpc_key = CMD_LIMITS[dog_state_name]["roll"]["mpc_key"]
-                        roll_range = map_range(mpc_state[roll_mpc_key]["input_state"], 
-                            APC_MK2_FADER_LIMITS[0], 
-                            APC_MK2_FADER_LIMITS[1], 
-                            0,
-                            # CMD_LIMITS[dog_state_name]["roll"][0],
-                            CMD_LIMITS[dog_state_name]["roll"]["range"][1])
-
-                        pitch_mpc_key = CMD_LIMITS[dog_state_name]["pitch"]["mpc_key"]
-                        pitch_range = map_range(mpc_state[pitch_mpc_key]["input_state"], 
-                            APC_MK2_FADER_LIMITS[0], 
-                            APC_MK2_FADER_LIMITS[1], 
-                            0,
-                            # CMD_LIMITS[dog_state_name]["pitch"][0],
-                            CMD_LIMITS[dog_state_name]["pitch"]["range"][1])
-
-                        yaw_mpc_key = CMD_LIMITS[dog_state_name]["yaw"]["mpc_key"]
-                        yaw_range = map_range(mpc_state[yaw_mpc_key]["input_state"], 
-                            APC_MK2_FADER_LIMITS[0], 
-                            APC_MK2_FADER_LIMITS[1], 
-                            0,
-                            # CMD_LIMITS[dog_state_name]["yaw"][0],
-                            CMD_LIMITS[dog_state_name]["yaw"]["range"][1])
-                    
-                    else:
-                        roll_range = joystick_handler.sensitivity["roll"]
-                        pitch_range = joystick_handler.sensitivity["pitch"]
-                        yaw_range = joystick_handler.sensitivity["yaw"]
                     
                     cmd = Euler(
                         roll = round(joystick_status["Axis 0"]\
@@ -252,7 +219,6 @@ async def start_bridge(mqtt_handler = None, joystick = None):
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(mqtt_handler.bridge_incomming(topic=f'{OUT_FILTER}/#', queue=queue))
-        # tg.create_task(mqtt_handler.bridge_incomming(topic=MPC_FILTER, queue=queue))
         tg.create_task(joystick_bridge(joystick_handler=joystick_handler, queue=queue, mqtt_handler = mqtt_handler))
 
 async def main():

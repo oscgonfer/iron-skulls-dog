@@ -33,8 +33,9 @@ class CommandHandler:
                 pass
             finally:
                 if source.value in INCOMING_TOPICS:
-
+                    
                     if source.value == RESUME_TOPIC:
+                        std_out ('Resume')
                         self.enabled = True
 
                     if INCOMING_TOPICS[source.value] == 'async':
@@ -47,44 +48,45 @@ class CommandHandler:
                         await self.handle_audio_command(_payload)
                     else:
                         std_out(f'Unknown handler command')
-
+                    
                     if source.value == STOP_TOPIC:
+                        std_out ('Disabled')
                         self.enabled = False
                 else:
                     std_out(f'Unknown source {source.value}')
 
     async def handle_async_command(self, payload):
         # Sport = Async
-        if not self.enabled: return
-        std_out(f"Command Payload: {payload}")
-        command = Command(payload)
+        if self.enabled:
+            std_out(f"Command Payload: {payload}")
+            command = Command(payload)
 
-        if self.capture is not None:
-            self.capture.add(command, SPORT_TOPIC)
+            if self.capture is not None:
+                self.capture.add(command, SPORT_TOPIC)
 
-        await self.dog.send_async_command(command)
+            await self.dog.send_async_command(command)
 
     async def handle_audio_command(self, payload):
         # Audio
-        if not self.enabled: return
-        std_out(f"Audio Payload: {payload}")
-        command = AudioCommand(payload)
+        if self.enabled:
+            std_out(f"Audio Payload: {payload}")
+            command = AudioCommand(payload)
 
-        if self.capture is not None:
-            self.capture.add(command, AUDIO_TOPIC)
+            if self.capture is not None:
+                self.capture.add(command, AUDIO_TOPIC)
 
-        await self.dog.send_audio_command(command)
+            await self.dog.send_audio_command(command)
 
     def handle_command(self, payload):
         # Movement = direct displacement on the space
-        if not self.enabled: return
-        std_out(f"Movement Payload: {payload}")
-        command = Command(payload)
+        if self.enabled:
+            std_out(f"Movement Payload: {payload}")
+            command = Command(payload)
 
-        if self.capture is not None:
-            self.capture.add(command, MOVE_TOPIC)
+            if self.capture is not None:
+                self.capture.add(command, MOVE_TOPIC)
 
-        self.dog.send_command(command)
+            self.dog.send_command(command)
 
     def handle_capture_command(self, payload):
 

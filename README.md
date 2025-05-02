@@ -1,6 +1,6 @@
 # Iron Skulls Dog
 
-Development files for a robot dog controller via TCP server that listens to commands or joysticks. Completely experimental.
+Development files for a robot dog controller via MQTT server that listens to commands or joysticks. Completely experimental.
 
 ## Installation
 
@@ -14,6 +14,7 @@ git clone --recurse-submodules git@github.com:legion1581/go2_webrtc_connect.git
 cd go2_webrtc_connect
 pip install -e .
 cd ../iron-skulls-dog
+<!-- Create a virtual environment if you want -->
 pip install -r requirements.txt
 ```
 
@@ -42,7 +43,7 @@ mosquitto
 Run main.py
 
 ```
-python main.py --broadcast-state
+python main.py --broadcast
 ```
 
 Run clients, for instance, joystick:

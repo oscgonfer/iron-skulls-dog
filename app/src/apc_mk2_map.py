@@ -10,7 +10,6 @@ pad_commands ={
     0: {'command': FreeWalk, "topic": SPORT_TOPIC},
     1: {'command': FreeBound, "topic": SPORT_TOPIC},
     2: {'command': FreeJump, "topic": SPORT_TOPIC},
-    3: {'command': FreeAvoid, "topic": SPORT_TOPIC},
     4: {'command': CrossWalk, "topic": SPORT_TOPIC},
     5: {'command': BackFlip, "topic": SPORT_TOPIC},
     6: {'command': FrontFlip, "topic": SPORT_TOPIC},
@@ -31,10 +30,9 @@ pad_commands ={
 
     # Third row - 16-23
     16: {'command': Hello, "topic": SPORT_TOPIC},
-    17: {'command': Heart, "topic": SPORT_TOPIC},
-    18: {'command': Damp, "topic": SPORT_TOPIC},
+    17: {'command': Damp, "topic": SPORT_TOPIC},
     19: {'command': Dance1, "topic": SPORT_TOPIC},
-    20: {'command': Dance2, "topic": SPORT_TOPIC},
+    # 20: {'command': Dance2, "topic": SPORT_TOPIC},
     21: {'command': Content, "topic": SPORT_TOPIC},
     22: {'command': WiggleHips, "topic": SPORT_TOPIC},
     23: {'command': WalkStair, "topic": SPORT_TOPIC},
@@ -45,7 +43,7 @@ pad_commands ={
     26: {'command': RiseSit, "topic": SPORT_TOPIC},
     27: {'command': Stretch, "topic": SPORT_TOPIC},
     28: {'command': FrontPounce, "topic": SPORT_TOPIC},
-    29: {'command': Wallow, "topic": SPORT_TOPIC},
-    30: {'command': Pose, "topic": SPORT_TOPIC},
-    31: {'command': Scrape, "topic": SPORT_TOPIC}
+    30: {'command': Wallow, "topic": SPORT_TOPIC},
+    31: {'command': Pose, "topic": SPORT_TOPIC},
+    
 }

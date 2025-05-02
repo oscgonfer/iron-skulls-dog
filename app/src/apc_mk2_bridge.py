@@ -19,8 +19,8 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
     dog_state = None
     dog_mode = None
     medias = {}
-
-    cmd = GetMotionSwitcherStatus()
+    state_payload = {}
+    cmd = GetMotionSwitcherStatus()    
     outgoing_topic = SPORT_TOPIC
 
     while True:
@@ -98,6 +98,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                                 value_range = APC_MK2_FADER_LIMITS)
                         else:
                             if _mi['input_state']:
+                                
                                 # For cases where there is a payload.
                                 # TODO for now, there is no case where the command has a payload and is also a toggle (payloads are only needed for audio commands)
                                 if action.payload is not None:
@@ -116,6 +117,11 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                                         if cmd.associated_states is not None:
                                             if any([dog_state == cmd_assoc_state.value for cmd_assoc_state in cmd.associated_states]):
                                                 cmd = None
+                            else:
+
+                                if action.topic in [RESUME_TOPIC, STOP_TOPIC]:
+                                # For safety commands
+                                    cmd = action.command()
                         
                         outgoing_topic = action.topic
                     
@@ -210,7 +216,7 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
 
         # TODO Announce mk2 faders
         # TODO Remove? Is this a problema?
-        state_payload = {}
+        _state_payload = {}
         for item in midi_values:
             action = midi_values[item]['action']
             # TODO only for unassigned commands
@@ -223,11 +229,14 @@ async def apc_bridge(apc_handler=None, queue=None, mqtt_handler=None):
                 'channel': midi_values[item]['channel'], 
                 'input_state': midi_values[item]['input_state']
             }
-            state_payload[st] = pl
-        await mqtt_handler.publish(topic=f'{MPC_TOPIC}', payload=json.dumps(state_payload))
+            _state_payload[st] = pl
+        
+        if _state_payload != state_payload:
+            state_payload = _state_payload
+            await mqtt_handler.publish(topic=f'{MPC_TOPIC}', payload=json.dumps(state_payload))
         
         # This sleep is needed to receive mqtt commands. Could it be avoided with an additional task through the joystick_handler?
-        await asyncio.sleep(0.0001)
+        await asyncio.sleep(0.001)
         cmd = None
 
 async def start_bridge(mqtt_handler = None, apc_handler = None):

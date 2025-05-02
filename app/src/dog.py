@@ -172,11 +172,17 @@ class Dog:
         std_out(f"Command options: {command.options}")
         std_out(f"Command extras: {command.expect_reply, command.update_switcher_mode, command.additional_wait, command.post_hook}")
 
+        # TODO Avoid sending async commands
+        # TODO Only in normal mode? Otherwise we can't go down from certain actions
+        if self.motion_switcher is not None:
+            if self.motion_switcher in AVOID_ASYNC:
+                if  self.dog_state in AVOID_ASYNC[self.motion_switcher]:
+                    std_out(f"Ignoring command in {self.motion_switcher}, dog state: {self.dog_state}!")
+                    return
+
         std_out(f"Waiting for lock...")
-        # TODO this sometimes gets locked??? Why?
-        # Check mode to avoid locking??
-        # Check state?
         await self.lock.acquire()
+        std_out("Lock acquired")
 
         if self.dry_run:
             std_out(f"Sleeping 3s...")
@@ -222,7 +228,6 @@ class Dog:
                 command.topic, command.options))
 
     async def publish_response(self, channel, response):
-        # print (f'{RESPONSE_TOPIC}/{channel}')
         if self.broadcast:
             await self.mqtt_handler.publish(topic=f'{RESPONSE_TOPIC}/{channel}', \
                 payload=json.dumps(response))
@@ -232,9 +237,9 @@ class Dog:
             await self.mqtt_handler.publish(topic=f'{STATE_TOPIC}/{channel}', \
                 payload=json.dumps(self.state))
         
-            await self.publish_mode()
+            await self.publish_motion_switcher_mode()
     
-    async def publish_mode(self):
+    async def publish_motion_switcher_mode(self):
         if self.broadcast:
             await self.mqtt_handler.publish(topic=f'{MODE_TOPIC}/mode', \
                 payload=json.dumps(self.motion_switcher))
@@ -258,17 +263,16 @@ class Dog:
         self._mode = self.state['LF_SPORT_MOD_STATE']['mode']
         asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
 
-    # def wireless_callback(self, message):
-    #     print (message)
-    #     current_message = message['data']
-    #     # Update state
-    #     self.state['WIRELESS'] = current_message
-    #     # Update mode
-    #     asyncio.gather(self.publish_state('WIRELESS'))
+    def wireless_callback(self, message):
+        print (message)
 
     @property
     def mode(self):
         return self._mode
+
+    @property
+    def dog_state(self):
+        return DogState(self.mode)
 
     @property
     def motion_switcher(self):
