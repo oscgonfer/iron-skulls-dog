@@ -31,11 +31,12 @@ pad_commands ={
     # Third row - 16-23
     16: {'command': Hello, "topic": SPORT_TOPIC},
     17: {'command': Damp, "topic": SPORT_TOPIC},
+    18: {'command': Dance2, "topic": SPORT_TOPIC},
     19: {'command': Dance1, "topic": SPORT_TOPIC},
     # 20: {'command': Dance2, "topic": SPORT_TOPIC},
     21: {'command': Content, "topic": SPORT_TOPIC},
     22: {'command': WiggleHips, "topic": SPORT_TOPIC},
-    23: {'command': WalkStair, "topic": SPORT_TOPIC},
+    23: {'command': Heart, "topic": SPORT_TOPIC},
     
     # Fourth row - 24-31
     24: {'command': FrontJump, "topic": SPORT_TOPIC},

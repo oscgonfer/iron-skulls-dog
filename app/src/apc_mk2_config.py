@@ -33,12 +33,12 @@ COLOR_EFFECT_MAP = {
                 "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
             "unassigned": {
-                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10},
+                "idle": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_100},
                 "running": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.BLINK_1_2},
-                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
+                "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_50}
             },
             "command": {
-                "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_50},
+                "idle": {"color": APCMK2PadColor.YELLOW, "effect": APCMK2PadEffect.ON_100},
                 "running": {"color": APCMK2PadColor.BLUE, "effect": APCMK2PadEffect.ON_100},
                 "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             },
