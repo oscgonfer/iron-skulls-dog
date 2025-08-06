@@ -119,7 +119,9 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
         if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
             std_out ('Movement with axis!')
             match dog_state:
-                case DogState.MOVE | DogState.MOVING | DogState.AI_AGILE | DogState.AI_FREEAVOID | DogState.AI_FREEBOUND | DogState.AI_WALKSTAIR | DogState.AI_FREEJUMP | DogState.AI_WALKUPRIGHT | DogState.AI_CROSSSTEP:
+                # TODO - These commands need to be rechecked based on dog
+                # mosquitto_sub -h localhost -t /out/state/LF_SPORT_MOD_STATE | jq .LF_SPORT_MOD_STATE.error_code
+                case DogState.BUSY | DogState.MOVE | DogState.MOVING | DogState.AI_AGILE | DogState.AI_FREEAVOID | DogState.AI_FREEBOUND | DogState.AI_WALKSTAIR | DogState.AI_FREEJUMP | DogState.AI_WALKUPRIGHT | DogState.AI_CROSSSTEP:
 
                     outgoing_topic = MOVE_TOPIC
 
@@ -132,6 +134,8 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                             y = round(joystick_status["Axis 0"] * vy_range, 2),
                             z = round(joystick_status["Axis 2"] * vyaw_range, 2)
                         )
+
+                        print (cmd)
 
                         if cmd is not None:
                             std_out (f'Robot command: {cmd.as_dict()}')

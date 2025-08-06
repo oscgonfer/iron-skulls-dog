@@ -291,32 +291,32 @@ if __name__ == "__main__":
                         'label': 'Dog State'
                     },
                     {
-                        'field': 'MULTIPLE_STATE.bodyHeight',
+                        'field': 'LF_SPORT_MOD_STATE.bodyHeight',
                         'widget': TextDisplay,
                         'label': 'Body Height'
                     },
                     {
-                        'field': 'MULTIPLE_STATE.brightness',
+                        'field': 'LF_SPORT_MOD_STATE.brightness',
                         'widget': TextDisplay,
                         'label': 'Led Brightness'
                     },
                     {
-                        'field': 'MULTIPLE_STATE.footRaiseHeight',
+                        'field': 'LF_SPORT_MOD_STATE.footRaiseHeight',
                         'widget': TextDisplay,
                         'label': 'Foot Raise Height'
                     },
                     {
-                        'field': 'MULTIPLE_STATE.obstaclesAvoidSwitch',
+                        'field': 'LF_SPORT_MOD_STATE.obstaclesAvoidSwitch',
                         'widget': TextDisplay,
                         'label': 'Obstacle Avoid Switch'
                     },
                     {
-                        'field': 'MULTIPLE_STATE.speedLevel',
+                        'field': 'LF_SPORT_MOD_STATE.speedLevel',
                         'widget': TextDisplay,
                         'label': 'Speed Level'
                     },
                     {
-                        'field': 'MULTIPLE_STATE.volume',
+                        'field': 'LF_SPORT_MOD_STATE.volume',
                         'widget': TextDisplay,
                         'label': 'Volume'
                     },
