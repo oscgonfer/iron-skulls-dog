@@ -290,6 +290,7 @@ if __name__ == "__main__":
                         'widget': TextDisplay,
                         'label': 'Dog State'
                     },
+                    # TODO - FIX
                     {
                         'field': 'LF_SPORT_MOD_STATE.bodyHeight',
                         'widget': TextDisplay,
