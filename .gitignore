@@ -16,3 +16,6 @@ dist/
 *.spec
 
 run-*.sh
+*.wav
+TODO.md
+notas.md
