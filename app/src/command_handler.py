@@ -2,7 +2,7 @@ import asyncio
 from capture import Capture
 from tools import std_out
 import json
-from command import Command, AudioCommand
+from command import Command, AudioCommand, DogState
 from config import *
 
 class CommandHandler:
@@ -59,12 +59,26 @@ class CommandHandler:
         # Sport = Async
         if self.enabled:
             std_out(f"Command Payload: {payload}")
+            std_out(f"DogState: {self.dog.mode}")
             command = Command(payload)
 
             if self.capture is not None:
                 self.capture.add(command, SPORT_TOPIC)
 
-            await self.dog.send_async_command(command)
+            # Avoid sending async commands if we can mess up
+            if self.dog.mode == DogState.MOVING or self.dog.mode == DogState.STANDING or self.dog.mode == DogState.BUSY:
+                std_out("Ignoring command")
+
+            else:
+                # TODO - Try this?
+                # try:
+                #     # Add timeout to async tasks
+                #     await asyncio.wait_for(self.dog.send_async_command(command), timeout = 6)
+                # except:
+                #     std_out("Timed out command, releasing")
+                #     pass
+                await self.dog.send_async_command(command)
+
 
     async def handle_audio_command(self, payload):
         # Audio
@@ -86,7 +100,11 @@ class CommandHandler:
             if self.capture is not None:
                 self.capture.add(command, MOVE_TOPIC)
 
-            self.dog.send_command(command)
+            # Avoid sending async commands if we can mess up
+            if self.dog.mode == DogState.PRONE or self.dog.mode == DogState.LOCKED or self.dog.mode == DogState.SAVE or self.dog.mode == DogState.BUSY:
+                std_out("Ignoring command")
+            else:
+                self.dog.send_command(command)
 
     def handle_capture_command(self, payload):
 

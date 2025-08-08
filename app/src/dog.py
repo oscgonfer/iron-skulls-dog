@@ -172,14 +172,6 @@ class Dog:
         std_out(f"Command options: {command.options}")
         std_out(f"Command extras: {command.expect_reply, command.update_switcher_mode, command.additional_wait, command.post_hook}")
 
-        # TODO Avoid sending async commands
-        # TODO Only in normal mode? Otherwise we can't go down from certain actions
-        if self.motion_switcher is not None:
-            if self.motion_switcher in AVOID_ASYNC:
-                if  self.dog_state in AVOID_ASYNC[self.motion_switcher]:
-                    std_out(f"Ignoring command in {self.motion_switcher}, dog state: {self.dog_state}!")
-                    return
-
         std_out(f"Waiting for lock...")
         await self.lock.acquire()
         std_out("Lock acquired")
@@ -259,8 +251,13 @@ class Dog:
         current_message = message['data']
         # Update state
         self.state['LF_SPORT_MOD_STATE'] = current_message
-        # Update mode
+        # Update mode (DogState)
         self._mode = self.state['LF_SPORT_MOD_STATE']['mode']
+        # Eager find motion switcher (DogMode)
+        for st in CMD_STATES:
+            if self._mode in CMD_STATES[st]:
+                self._motion_switcher = st
+        # Current 
         asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
 
     def wireless_callback(self, message):

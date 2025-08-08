@@ -29,13 +29,10 @@ class DogMode(IntEnum):
     ADVANCED=1
     AI=2
 
-# TODO Add here other commands that shouldn't send async while in normal mode
-AVOID_ASYNC = {
-    "normal": [
-        DogState.MOVING
-    ],
+CMD_STATES = {
+    "normal": [DogState.BUSY, DogState.MOVE, DogState.STANDING, DogState.SIT, DogState.JUMP, DogState.POUNCE],
     "advanced": [],
-    "ai": []
+    "ai": [DogState.AI_AGILE, DogState.AI_WALKSTAIR, DogState.AI_WALKUPRIGHT, DogState.AI_CROSSSTEP, DogState.AI_WTF, DogState.AI_FREEAVOID, DogState.AI_FREEBOUND, DogState.AI_FREEJUMP]
 }
 
 CMD_LIMITS = {
@@ -1227,7 +1224,7 @@ class MoonWalk(Command):
         super().__init__(payload)
 
 ## Motion Switcher
-#1002
+#1001
 class GetMotionSwitcherStatus(Command):
     def __init__(self):
         payload = {
