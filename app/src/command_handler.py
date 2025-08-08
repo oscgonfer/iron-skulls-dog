@@ -66,7 +66,8 @@ class CommandHandler:
                 self.capture.add(command, SPORT_TOPIC)
 
             # Avoid sending async commands if we can mess up
-            if self.dog.mode == DogState.MOVING or self.dog.mode == DogState.STANDING or self.dog.mode == DogState.BUSY:
+            # Take into account that in handstand mode we have the same as in moving...
+            if (self.dog.mode == DogState.MOVING and self.dog.motion_switcher == "normal") or self.dog.mode == DogState.STANDING or self.dog.mode == DogState.BUSY:
                 std_out("Ignoring command")
 
             else:
