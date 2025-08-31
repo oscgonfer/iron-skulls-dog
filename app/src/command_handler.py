@@ -2,7 +2,7 @@ import asyncio
 from capture import Capture
 from tools import std_out
 import json
-from command import Command, AudioCommand, DogState
+from command import Command, AudioCommand, DogState, DOGSTATE_AVOID_ASYNC_CMDS, DOGSTATE_AVOID_MOVING_CMDS
 from config import *
 
 class CommandHandler:
@@ -33,7 +33,7 @@ class CommandHandler:
                 pass
             finally:
                 if source.value in INCOMING_TOPICS:
-                    
+
                     if source.value == RESUME_TOPIC:
                         std_out ('Resume')
                         self.enabled = True
@@ -48,7 +48,7 @@ class CommandHandler:
                         await self.handle_audio_command(_payload)
                     else:
                         std_out(f'Unknown handler command')
-                    
+
                     if source.value == STOP_TOPIC:
                         std_out ('Disabled')
                         self.enabled = False
@@ -59,15 +59,16 @@ class CommandHandler:
         # Sport = Async
         if self.enabled:
             std_out(f"Command Payload: {payload}")
-            std_out(f"DogState: {self.dog.mode}")
+            std_out(f"DogState: {self.dog.dog_state}")
             command = Command(payload)
 
             if self.capture is not None:
                 self.capture.add(command, SPORT_TOPIC)
 
             # Avoid sending async commands if we can mess up
-            # Take into account that in handstand mode we have the same as in moving...
-            if (self.dog.mode == DogState.MOVING and self.dog.motion_switcher == "normal") or self.dog.mode == DogState.STANDING or self.dog.mode == DogState.BUSY:
+            # Take into account that in handstand dog_state we have the same as in moving...
+            # if (self.dog.dog_state == DogState.MOVING and self.dog.motion_switcher == "normal") or self.dog.dog_state == DogState.STANDING or self.dog.dog_state == DogState.BUSY:
+            if self.dog.dog_state in DOGSTATE_AVOID_ASYNC_CMDS:
                 std_out("Ignoring command")
 
             else:
@@ -101,8 +102,8 @@ class CommandHandler:
             if self.capture is not None:
                 self.capture.add(command, MOVE_TOPIC)
 
-            # Avoid sending async commands if we can mess up
-            if self.dog.mode == DogState.PRONE or self.dog.mode == DogState.LOCKED or self.dog.mode == DogState.SAVE or self.dog.mode == DogState.BUSY:
+            # Avoid sending sync commands if we can mess up
+            if self.dog.dog_state in DOGSTATE_AVOID_MOVING_CMDS:
                 std_out("Ignoring command")
             else:
                 self.dog.send_command(command)

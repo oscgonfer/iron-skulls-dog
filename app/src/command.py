@@ -3,43 +3,64 @@ from go2_webrtc_driver.constants import *
 from tools import map_range
 from enum import IntEnum
 
-# TODO Are there more modes?
+# TODO When crouching down, it comes back to a non-consistent mode after pressing BalanceStand
+# Should we change the balance stand button depending?
 class DogState(IntEnum):
-    BUSY=0 # Working on something. Maybe dancing, saying hello...
-    MOVE=1 # Accepts any move command except Euler. Run, stair 1 and 2, walk, endurance
-    STANDING=2 # Accepts Euler
-    MOVING=3 # Moving with any of run, stair 1 and 2, walk, endurance
-    PRONE=5 # Down
-    LOCKED=6 # Posture locked, can only go prone
-    SAVE=7 # Seems to enter after a bit into this when prone
-    SIT=10 # Seems only in this mode when sitting only
-    JUMP=12 # Seems only to be in this mode when jumping only
-    POUNCE=13 # Seems only to be in this mode when pouncing only
-    AI_AGILE=9 # AI Agile mode
-    AI_FREEBOUND=15 # AI FreeBound mode
-    AI_FREEJUMP=16 # AI FreeJump mode
-    AI_FREEAVOID=17 # AI FreeAvoid mode
-    AI_WALKSTAIR=18 # AI WalkStair mode
-    AI_WALKUPRIGHT=19 # AI WalkUpRight mode
-    AI_CROSSSTEP=20 # AI CrossStep mode
-    AI_WTF=21
+    AGILE=100 # Agile
+    DAMPING=1001 # Damp
+    LOCKED=1002 # Posture locked, can only go prone
+    CROUCH=1004 # Crouch down
+    BUSY=1006 # Working on something. Greeting/Stretching/Dancing/Bowing/Heart Shape/Happy
+    SIT=1007 # Seems only in this mode when sitting only
+    JUMP=1008 # Seems only to be in this mode when jumping only
+    POUNCE=1009 # Front pouncing, only in classic mode
+    BALANCE_STANDING=1013
+    REGULAR_WALKING=1015 # MOVING
+    REGULAR_TROTTING=1016 # MOVING WHILE TROTTING
+    REGULAR_ENDURANCE=1017 # MOVING WHILE ENDURANCE
+    POSE=1091 # Accepts Euler
+    FALL=2005 # TODO CONFIRM
+    CROUCH_2=2006
+    FREEAVOID=2007 # AI FreeAvoid mode
+    FREEBOUND=2008 # AI FreeBound mode
+    FREEJUMP=2009 # AI FreeJump mode
+    CLASSIC=2010 # Classic Normal mode
+    HANDSTAND=2011 # AI Handstand mode
+    FRONTFLIP=2012
+    BACKFLIP=2013
+    LEFTFLIP=2014
+    CROSSSTEP=2016 # AI CrossStep mode
+    WALKUPRIGHT=2017 # AI WalkUpRight mode
+    TOWING=2019 # ?
 
-class DogMode(IntEnum):
-    NORMAL=0
-    ADVANCED=1
-    AI=2
+DOGSTATE_AVOID_ASYNC_CMDS = [
+    DogState.REGULAR_WALKING,
+    DogState.REGULAR_TROTTING,
+    DogState.REGULAR_ENDURANCE,
+    DogState.BUSY,
+    DogState.JUMP,
+    DogState.POUNCE
+]
 
-CMD_STATES = {
-    "normal": [DogState.BUSY, DogState.MOVE, DogState.STANDING, DogState.SIT, DogState.JUMP, DogState.POUNCE],
-    "advanced": [],
-    "ai": [DogState.AI_AGILE, DogState.AI_WALKSTAIR, DogState.AI_WALKUPRIGHT, DogState.AI_CROSSSTEP, DogState.AI_WTF, DogState.AI_FREEAVOID, DogState.AI_FREEBOUND, DogState.AI_FREEJUMP]
-}
+DOGSTATE_AVOID_MOVING_CMDS = [
+    DogState.DAMPING,
+    DogState.CROUCH,
+    DogState.CROUCH_2,
+    DogState.LOCKED,
+    DogState.BUSY,
+    DogState.SIT,
+    DogState.JUMP,
+    DogState.POUNCE,
+    DogState.FRONTFLIP,
+    DogState.BACKFLIP,
+    DogState.LEFTFLIP
+]
 
 CMD_LIMITS = {
-    "MOVE": { 
+    "MOVE": {
         "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
-        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"}, 
-        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"}, 
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
         "roll": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
         "yaw": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
         "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
@@ -60,7 +81,7 @@ CMD_LIMITS = {
         "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
         "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
     },
-    "AI_AGILE": {
+    "AGILE": {
         "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"}, # Not according to documentation
         "vy": {"range": [-1.4, 1.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-2.3, 2.3], "mpc_key": "FADER_6"}, # Out of limit
@@ -68,7 +89,7 @@ CMD_LIMITS = {
         "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
-    "AI_FREEBOUND": {
+    "FREEBOUND": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
@@ -76,7 +97,7 @@ CMD_LIMITS = {
         "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
-    "AI_FREEJUMP": {
+    "FREEJUMP": {
         "vx": {"range": [-1.6, 1.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
@@ -84,7 +105,7 @@ CMD_LIMITS = {
         "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
-    "AI_FREEAVOID": {
+    "FREEAVOID": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
@@ -92,15 +113,15 @@ CMD_LIMITS = {
         "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
-    "AI_WALKSTAIR": {
-        "vx": {"range": [-1.2, 1.2], "mpc_key": "FADER_5"},
-        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
-        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
-        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
-        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
-        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
-    },
-    "AI_WALKUPRIGHT": {
+    # "WALKSTAIR": {
+    #     "vx": {"range": [-1.2, 1.2], "mpc_key": "FADER_5"},
+    #     "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+    #     "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+    #     "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+    #     "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+    #     "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    # },
+    "WALKUPRIGHT": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
@@ -108,7 +129,7 @@ CMD_LIMITS = {
         "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
-    "AI_CROSSSTEP": {
+    "CROSSSTEP": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
@@ -119,7 +140,7 @@ CMD_LIMITS = {
 }
 
 class Command:
-    def __init__(self, payload, associated_modes= None, associated_states = None, toggle = False):
+    def __init__(self, payload, associated_states = None, toggle = False):
         # Exportable
         self.topic = payload["topic"]
         self.options = payload["options"]
@@ -128,7 +149,6 @@ class Command:
         self.post_hook = payload["post_hook"] if "post_hook" in payload else None
         self.additional_wait = payload["additional_wait"] if "additional_wait" in payload else 0
         # Internal only
-        self.associated_modes = associated_modes
         self.associated_states = associated_states
         self.toggle = toggle
 
@@ -153,18 +173,17 @@ class Command:
         return json.dumps(self.as_dict())
 
 class AudioCommand:
-    def __init__(self, payload, associated_modes = None, associated_states = None):
+    def __init__(self, payload, associated_states = None):
         # Exportable
         self.source = payload["source"]
         self.options = payload["options"]
         # Internal only
-        self.associated_modes = associated_modes
         self.associated_states = associated_states
 
     def as_dict(self):
         return {
             'source': self.source,
-            'options': self.options,            
+            'options': self.options,
         }
 
     def to_json(self):
@@ -214,7 +233,7 @@ class Damp(Command):
     """
     Enter damping state
     All motor joints stop moving and enter a damping state.
-    This mode has the highest priority and is used for emergency 
+    This mode has the highest priority and is used for emergency
     stops in unexpected situations
     """
     def __init__(self):
@@ -235,7 +254,7 @@ class Damp(Command):
 class BalanceStand(Command):
     """
     Unlock
-    Release the joint motor lock and switch from normal standing, 
+    Release the joint motor lock and switch from normal standing,
     crouching, continuous stepping state to balanced standing mode.
     In this mode, push the remote control stick and the robot will move
     """
@@ -251,7 +270,7 @@ class BalanceStand(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.MOVE])
+        super().__init__(payload, associated_states=[DogState.BALANCE_STANDING])
 
 # 1003
 class StopMove(Command):
@@ -278,7 +297,7 @@ class StandUp(Command):
     Joint locking, standing high
     The robot dog stands normally tall and the motor joints remain locked.
     Compared to the balanced standing mode, the posture of the robot
-    dog in this mode will not always be balanced. 
+    dog in this mode will not always be balanced.
     The default standing height is 0.32m
     """
     def __init__(self):
@@ -313,13 +332,13 @@ class StandDown(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.PRONE, DogState.SAVE])
+        super().__init__(payload, associated_states=[DogState.CROUCH, DogState.CROUCH_2])
 
-# 1006
+# 1006 - TODO Doesn't work
 class RecoveryStand(Command):
     """
     Recovery standing
-    Return from overturned to balanced standing. 
+    Return from overturned to balanced standing.
     For safety, the response will only return to standing in the overturned state
     """
     def __init__(self):
@@ -356,17 +375,17 @@ class Euler(Command):
 class Move(Command):
     """
     Move at the specified speed
-    Control the moving speed, the set speed is the speed 
+    Control the moving speed, the set speed is the speed
     of the body coordinate system. It is recommended that you call
-    BalanceStand once before you call Move to ensure that you unlock 
+    BalanceStand once before you call Move to ensure that you unlock
     and enter a removable state.
     Value range (Normal):
         Vx: [-0.6~0.6 ] (m/s)
-        Vy: Value range [-0.4~0.4 ] (m/s) 
+        Vy: Value range [-0.4~0.4 ] (m/s)
         Vyaw: Value range [-0.8~0.8 ] (rad/s)
     Value range (AI):
         Vx: [-0.6~0.6 ] (m/s)
-        Vy: Value range [-0.4~0.4 ] (m/s) 
+        Vy: Value range [-0.4~0.4 ] (m/s)
         Vyaw: Value range [-0.8~0.8 ] (rad/s)
     """
     def __init__(self, x: float, y: float, z: float):
@@ -387,9 +406,9 @@ class Move(Command):
 class MoveToPos(Command):
     """
     Move to certain position
-    Control the moving speed, the set speed is the speed 
+    Control the moving speed, the set speed is the speed
     of the body coordinate system. It is recommended that you call
-    BalanceStand once before you call Move to ensure that you unlock 
+    BalanceStand once before you call Move to ensure that you unlock
     and enter a removable state.
     """
     def __init__(self, x: float, y: float, z: float):
@@ -439,182 +458,184 @@ class RiseSit(Command):
         super().__init__(payload)
 
 # 1011
-# TODO ASYNC?
-class SwitchGait(Command):
-    """
- 	d: Gait enumeration value, with values ranging from 0 to 4, where 0 is idle, 1 is trot, 2 is trot running, 3 is forward climbing mode, and 4 is reverse climbing mode
-    """
-    def __init__(self, t: int):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": t},
-                "api_id": 1011
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# TODO REMOVE
+# class SwitchGait(Command):
+#     """
+#  	d: Gait enumeration value, with values ranging from 0 to 4, where 0 is idle, 1 is trot, 2 is trot running, 3 is forward climbing mode, and 4 is reverse climbing mode
+#     """
+#     def __init__(self, t: int):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": t},
+#                 "api_id": 1011
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-class SwitchIdle(Command):
-    """
- 	Gait idle
-    """
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": 0},
-                "api_id": 1011
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# class SwitchIdle(Command):
+#     """
+#  	Gait idle
+#     """
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": 0},
+#                 "api_id": 1011
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-class SwitchTrot(Command):
-    """
- 	Gait trot
-    """
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": 1},
-                "api_id": 1011
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# TODO - Remove
+# class SwitchTrot(Command):
+#     """
+#  	Gait trot
+#     """
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": 1},
+#                 "api_id": 1011
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-class SwitchRunning(Command):
-    """
- 	Gait trot running
-    """
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": 2},
-                "api_id": 1011
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# TODO - Remove
+# class SwitchRunning(Command):
+#     """
+#  	Gait trot running
+#     """
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": 2},
+#                 "api_id": 1011
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-class SwitchForwardClimb(Command):
-    """
- 	Gait forward climbing mode
-    """
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": 3},
-                "api_id": 1011
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# class SwitchForwardClimb(Command):
+#     """
+#  	Gait forward climbing mode
+#     """
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": 3},
+#                 "api_id": 1011
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-class SwitchBackwardClimb(Command):
-    """
- 	Gait forward climbing mode
-    """
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": 4},
-                "api_id": 1011
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# class SwitchBackwardClimb(Command):
+#     """
+#  	Gait forward climbing mode
+#     """
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": 4},
+#                 "api_id": 1011
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-# 1012
-class Trigger(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": "",
-                "api_id": 1012
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1012 - TODO Remove
+# class Trigger(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1012
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-# 1013
-class BodyHeight(Command):
-    def __init__(self, height: float, value_range = None):
-        """
-        Body height between -0.18 and 0.03
-        If value_range is not None, we assume they are
-        passing us a range to map values to
-        """
-        if value_range is not None:
-            height = map_range(height, value_range[0], value_range[1], -0.18, 0.03)
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": height},
-                "api_id": 1013
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1013 - TODO Remove
+# class BodyHeight(Command):
+#     def __init__(self, height: float, value_range = None):
+#         """
+#         Body height between -0.18 and 0.03
+#         If value_range is not None, we assume they are
+#         passing us a range to map values to
+#         """
+#         if value_range is not None:
+#             height = map_range(height, value_range[0], value_range[1], -0.18, 0.03)
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": height},
+#                 "api_id": 1013
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-# 1014
-class FootRaiseHeight(Command):
-    def __init__(self, height: float, value_range = None):
-        """
-        Foot raise height height between -0.06, 0.03
-        If value_range is not None, we assume they are
-        passing us a range to map values to
-        """
-        if value_range is not None:
-            height = map_range(height, value_range[0], value_range[1], -0.06, 0.03)
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": height},
-                "api_id": 1014
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1014 - TODO Remove
+# class FootRaiseHeight(Command):
+#     def __init__(self, height: float, value_range = None):
+#         """
+#         Foot raise height height between -0.06, 0.03
+#         If value_range is not None, we assume they are
+#         passing us a range to map values to
+#         """
+#         if value_range is not None:
+#             height = map_range(height, value_range[0], value_range[1], -0.06, 0.03)
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": height},
+#                 "api_id": 1014
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
 # 1015
 class SpeedLevel(Command):
     """
         Set the speed range
-        Speed range enumeration value, 
+        Speed range enumeration value,
         with values of -1 for slow speed, and 1 for fast speed
     """
     def __init__(self, level: int):
@@ -679,64 +700,63 @@ class Stretch(Command):
         }
         super().__init__(payload, associated_states=[DogState.BUSY])
 
-SPORT_PATH_POINT_SIZE = 30
-# 1018
+# SPORT_PATH_POINT_SIZE = 30
+# 1018 - TODO Remove
+# class TrajectoryFollow(Command):
+#     def __init__(self, path: list):
+#         l = len(path)
 
-class TrajectoryFollow(Command):
-    def __init__(self, path: list):
-        l = len(path)
+#         if l != SPORT_PATH_POINT_SIZE:
+#             std_out(f"Path size NOK ({l})")
+#             return
 
-        if l != SPORT_PATH_POINT_SIZE:
-            std_out(f"Path size NOK ({l})")
-            return
+#         path_p = []
+#         for i in range(l):
+#             point = path[i]
+#             p = {}
+#             p["t_from_start"] = point.timeFromStart
+#             p["x"] = point.x
+#             p["y"] = point.y
+#             p["yaw"] = point.yaw
+#             p["vx"] = point.vx
+#             p["vy"] = point.vy
+#             p["vyaw"] = point.vyaw
+#             path_p.append(p)
 
-        path_p = []
-        for i in range(l):
-            point = path[i]
-            p = {}
-            p["t_from_start"] = point.timeFromStart
-            p["x"] = point.x
-            p["y"] = point.y
-            p["yaw"] = point.yaw
-            p["vx"] = point.vx
-            p["vy"] = point.vy
-            p["vyaw"] = point.vyaw
-            path_p.append(p)
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": path_p,
+#                 "api_id": 1018
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": path_p,
-                "api_id": 1018
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
-
-# 1019
-class ContinuousGait(Command):
-    """
-    Continuous walk
-    flag: Set true to open continuous walk, and false to close continuous walk
-    After starting a continuous walk, the robot dog will keep stepping, 
-    even if the current speed is 0
-    """
-    def __init__(self, flag: int):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": flag},
-                "api_id": 1019
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1019 - TODO Remove
+# class ContinuousGait(Command):
+#     """
+#     Continuous walk
+#     flag: Set true to open continuous walk, and false to close continuous walk
+#     After starting a continuous walk, the robot dog will keep stepping,
+#     even if the current speed is 0
+#     """
+#     def __init__(self, flag: int):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": flag},
+#                 "api_id": 1019
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
 # 1020
 class Content(Command):
@@ -754,21 +774,21 @@ class Content(Command):
         }
         super().__init__(payload, associated_states=[DogState.BUSY])
 
-# 1021
-class Wallow(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": "",
-                "api_id": 1021
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload, associated_states=[DogState.BUSY])
+# 1021 - TODO Remove
+# class Wallow(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1021
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1022
 class Dance1(Command):
@@ -802,39 +822,39 @@ class Dance2(Command):
         }
         super().__init__(payload, associated_states=[DogState.BUSY])
 
-# 1024
-class GetBodyHeight(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": "",
-                "api_id": 1024
-            },
-            "expect_reply": True,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1024 - TODO Remove
+# class GetBodyHeight(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1024
+#             },
+#             "expect_reply": True,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-# 1025
-class GetFootRaiseHeight(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": "",
-                "api_id": 1025
-            },
-            "expect_reply": True,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1025 - TODO Remove
+# class GetFootRaiseHeight(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1025
+#             },
+#             "expect_reply": True,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
-# 1026
+# 1026 - TODO Remove?? Seems to work
 class GetSpeedLevel(Command):
     def __init__(self):
         payload = {
@@ -880,7 +900,7 @@ class Pose(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.STANDING], toggle = True)
+        super().__init__(payload, associated_states=[DogState.POSE], toggle = True)
 
 # 1029
 class Scrape(Command):
@@ -912,7 +932,7 @@ class FrontFlip(Command):
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload)
+        super().__init__(payload, associated_states=[DogState.FRONTFLIP])
 
 # 1031
 class FrontJump(Command):
@@ -946,37 +966,21 @@ class FrontPounce(Command):
         }
         super().__init__(payload, associated_states=[DogState.POUNCE])
 
-# 1033
-class WiggleHips(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": "",
-                "api_id": 1033
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload, associated_states=[DogState.BUSY])
-
-# 1035
-class EconomicGait(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": "",
-                "api_id": 1035
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1033 - TODO REMOVE
+# class WiggleHips(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1033
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1036
 class Heart(Command):
@@ -994,15 +998,14 @@ class Heart(Command):
         }
         super().__init__(payload, associated_states=[DogState.BUSY])
 
-# 1037
-# NOT AVAILABLE
-class Dance3(Command):
+# 1061 - Normal mode walk style DON'T USE
+class StaticWalk(Command):
     def __init__(self):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": "",
-                "api_id": 1037
+                "api_id": 1061
             },
             "expect_reply": False,
             "update_switcher_mode": False,
@@ -1011,7 +1014,87 @@ class Dance3(Command):
         }
         super().__init__(payload)
 
-# 1039
+# 1062
+class TrotRun(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": "",
+                "api_id": 1062
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload) # TODO - Associated mode?
+
+# 1063
+class EconomicGait(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": "",
+                "api_id": 1063
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload)
+
+# 2041
+class LeftFlip(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": True},
+                "api_id": 2041
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload, associated_states=[DogState.LEFTFLIP])
+
+# 1043 TODO Remove
+# class RightFlip(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {"data": True},
+#                 "api_id": 1043
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
+
+# 2043
+class BackFlip(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": True},
+                "api_id": 2043
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload, associated_states=[DogState.BACKFLIP])
+
+# 2044
 # Handstand
 class StandOut(Command):
     def __init__(self, flag: bool = True):
@@ -1019,275 +1102,244 @@ class StandOut(Command):
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1039
+                "api_id": 2044
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states = [DogState.MOVING], toggle=True)
+        super().__init__(payload, associated_states = [DogState.HANDSTAND], toggle=True)
 
-# 1042
-class LeftFlip(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": True},
-                "api_id": 1042
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
-
-# 1043
-class RightFlip(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": True},
-                "api_id": 1043
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
-
-# 1044
-class BackFlip(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {"data": True},
-                "api_id": 1044
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
-
-# 1045 - LeadFollow
+# 2045 - LeadFollow
 class FreeWalk(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
-                "parameter": {"data": flag},
-                "api_id": 1045
+                "parameter": "",
+                "api_id": 2045
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_AGILE])
+        super().__init__(payload, associated_states=[DogState.AGILE]) # TODO Fix
 
-# 1046
+# 2046
 class FreeBound(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1046
+                "api_id": 2046
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_FREEBOUND], toggle=True)
+        super().__init__(payload, associated_states=[DogState.FREEBOUND], toggle=True)
 
-# 1047
+# 2047
 class FreeJump(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1047
+                "api_id": 2047
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_FREEJUMP], toggle=True)
+        super().__init__(payload, associated_states=[DogState.FREEJUMP], toggle=True)
 
-# 1048
+# 2048
 class FreeAvoid(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1048
+                "api_id": 2048
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_FREEAVOID], toggle=True)
+        super().__init__(payload, associated_states=[DogState.FREEAVOID], toggle=True)
 
-# 1049
-class WalkStair(Command):
+# 2049
+# Set to true to enter classic gait mode, false to exit and enter agile mode.
+class ClassicWalk(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1049
+                "api_id": 2049
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_WALKSTAIR], toggle=True)
+        super().__init__(payload, associated_states=[DogState.CLASSIC], toggle=True)
 
-# 1050 - Standup
+# 2049
+# Set to true to enter classic gait mode, false to exit and enter agile mode.
+class AIWalk(Command):
+    def __init__(self):
+        payload = {
+            "topic": RTC_TOPIC["SPORT_MOD"],
+            "options": {
+                "parameter": {"data": False},
+                "api_id": 2049
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": None,
+            "additional_wait": 0
+        }
+        super().__init__(payload, associated_states=[DogState.AGILE], toggle=True)
+
+# 2050 - WalkUpright
 class WalkUpright(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1050
+                "api_id": 2050
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_WALKUPRIGHT], toggle=True)
+        super().__init__(payload, associated_states=[DogState.WALKUPRIGHT], toggle=True)
 
-# 1051
-# CrossWalk (crosstep before)
-class CrossWalk(Command):
+# 2051
+# CrossStep
+class CrossStep(Command):
     def __init__(self, flag: bool = True):
         payload = {
             "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": {"data": flag},
-                "api_id": 1051
+                "api_id": 2051
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
             "additional_wait": 0
         }
-        super().__init__(payload, associated_states=[DogState.AI_CROSSSTEP], toggle=True)
+        super().__init__(payload, associated_states=[DogState.CROSSSTEP], toggle=True)
 
-# 1303
-class OneSidedStep(Command):
-    def __init__(self, flag: bool = True):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {},
-                "api_id": 1303
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# 1303 TODO Remove
+# class OneSidedStep(Command):
+#     def __init__(self, flag: bool = True):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {},
+#                 "api_id": 1303
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
 # 1305
 # TODO - Data needed?
 # Not available?
-class MoonWalk(Command):
-    def __init__(self, flag: bool=True):
-        payload = {
-            "topic": RTC_TOPIC["SPORT_MOD"],
-            "options": {
-                "parameter": {},
-                "api_id": 1305
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+# class MoonWalk(Command):
+#     def __init__(self, flag: bool=True):
+#         payload = {
+#             "topic": RTC_TOPIC["SPORT_MOD"],
+#             "options": {
+#                 "parameter": {},
+#                 "api_id": 1305
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
 ## Motion Switcher
-#1001
-class GetMotionSwitcherStatus(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["MOTION_SWITCHER"],
-            "options": {
-                "parameter": "",
-                "api_id": 1001
-            },
-            "expect_reply": True,
-            "update_switcher_mode": True,
-            "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload)
+#1001 TODO Remove
+# class GetMotionSwitcherStatus(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["MOTION_SWITCHER"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1001
+#             },
+#             "expect_reply": True,
+#             "update_switcher_mode": True,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload)
 
+# Normal #1002 TODO Remove
+# class SetMotionSwitcherNormal(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["MOTION_SWITCHER"],
+#             "options": {
+#                 "parameter": {"name": "normal"},
+#                 "api_id": 1002
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": GetMotionSwitcherStatus(),
+#             "additional_wait": 5
+#         }
+#         super().__init__(payload)
 
-# Normal #1002
-class SetMotionSwitcherNormal(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["MOTION_SWITCHER"],
-            "options": {
-                "parameter": {"name": "normal"},
-                "api_id": 1002
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": GetMotionSwitcherStatus(),
-            "additional_wait": 5
-        }
-        super().__init__(payload)
+# AI #1002 TODO Remove
+# class SetMotionSwitcherAI(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["MOTION_SWITCHER"],
+#             "options": {
+#                 "parameter": {"name": "ai"},
+#                 "api_id": 1002
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": GetMotionSwitcherStatus(),
+#             "additional_wait": 5
+#         }
+#         super().__init__(payload)
 
-# AI #1002
-class SetMotionSwitcherAI(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["MOTION_SWITCHER"],
-            "options": {
-                "parameter": {"name": "ai"},
-                "api_id": 1002
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": GetMotionSwitcherStatus(),
-            "additional_wait": 5
-        }
-        super().__init__(payload)
-
-# AI #1002
-class SetMotionSwitcherAdvanced(Command):
-    def __init__(self):
-        payload = {
-            "topic": RTC_TOPIC["MOTION_SWITCHER"],
-            "options": {
-                "parameter": {"name": "advanced"},
-                "api_id": 1002
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": GetMotionSwitcherStatus(),
-            "additional_wait": 5
-        }
-        super().__init__(payload)
+# AI #1002 TODO Remove
+# class SetMotionSwitcherAdvanced(Command):
+#     def __init__(self):
+#         payload = {
+#             "topic": RTC_TOPIC["MOTION_SWITCHER"],
+#             "options": {
+#                 "parameter": {"name": "advanced"},
+#                 "api_id": 1002
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": GetMotionSwitcherStatus(),
+#             "additional_wait": 5
+#         }
+#         super().__init__(payload)
 
 ## VUI
 class GetBrightness(Command):
@@ -1309,10 +1361,10 @@ class SetBrightness(Command):
     def __init__(self, brightness, value_range: None):
         """
             Brightness from 0 to 10.
-            If value_range is not none, we assume they are 
+            If value_range is not none, we assume they are
             passing us a scale to map the values on.
         """
-        if value_range is not None: 
+        if value_range is not None:
             brightness = map_range(brightness, value_range[0], value_range[1], 0, 10)
         payload = {
             "topic": RTC_TOPIC["VUI"],
@@ -1380,10 +1432,10 @@ class SetVolume(Command):
     def __init__(self, volume, value_range: None):
         """
             Volume from 0 to 10
-            If value_range is not none, we assume they are 
+            If value_range is not none, we assume they are
             passing us a scale to map the values on.
         """
-        if value_range is not None: 
+        if value_range is not None:
             volume = map_range(volume, value_range[0], value_range[1], 0, 10)
         payload = {
             "topic": RTC_TOPIC["VUI"],
@@ -1399,32 +1451,49 @@ class SetVolume(Command):
         super().__init__(payload)
 
 ## Obstacle avoidance
-class GetObstacleAvoidance(Command):
-    def __init__(self, flag: bool = False):
+# class GetObstacleAvoidance(Command):
+#     def __init__(self, flag: bool = False):
+#         payload = {
+#             "topic": RTC_TOPIC["OBSTACLES_AVOID"],
+#             "options": {
+#                 "parameter": "",
+#                 "api_id": 1002
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": None,
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload, toggle=True)
+
+# TODO Remove
+# class SetObstacleAvoidance(Command):
+#     def __init__(self, flag: bool = False):
+#         payload = {
+#             "topic": RTC_TOPIC["OBSTACLES_AVOID"],
+#             "options": {
+#                 "parameter": {"enable": flag},
+#                 "api_id": 1001
+#             },
+#             "expect_reply": False,
+#             "update_switcher_mode": False,
+#             "post_hook": GetObstacleAvoidance(),
+#             "additional_wait": 0
+#         }
+#         super().__init__(payload, toggle=True)
+
+
+class SwitchAvoidMode(Command):
+    def __init__(self):
         payload = {
-            "topic": RTC_TOPIC["OBSTACLES_AVOID"],
+            "topic": RTC_TOPIC["SPORT_MOD"],
             "options": {
                 "parameter": "",
-                "api_id": 1002
+                "api_id": 2058
             },
             "expect_reply": False,
             "update_switcher_mode": False,
             "post_hook": None,
-            "additional_wait": 0
-        }
-        super().__init__(payload, toggle=True)
-        
-class SetObstacleAvoidance(Command):
-    def __init__(self, flag: bool = False):
-        payload = {
-            "topic": RTC_TOPIC["OBSTACLES_AVOID"],
-            "options": {
-                "parameter": {"enable": flag},
-                "api_id": 1001
-            },
-            "expect_reply": False,
-            "update_switcher_mode": False,
-            "post_hook": GetObstacleAvoidance(),
             "additional_wait": 0
         }
         super().__init__(payload, toggle=True)

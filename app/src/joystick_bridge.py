@@ -43,9 +43,9 @@ def get_limit(dog_state_name, param, mpc_state):
         return 0
 
     key = CMD_LIMITS[dog_state_name][param]["mpc_key"]
-    value_range = map_range(mpc_state[key]["input_state"], 
-        APC_MK2_FADER_LIMITS[0], 
-        APC_MK2_FADER_LIMITS[1], 
+    value_range = map_range(mpc_state[key]["input_state"],
+        APC_MK2_FADER_LIMITS[0],
+        APC_MK2_FADER_LIMITS[1],
         0,
         # CMD_LIMITS[dog_state_name]["vx"][0],
         CMD_LIMITS[dog_state_name][param]["range"][1])
@@ -74,7 +74,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                     pass
                 else:
                     try:
-                        _dog_state = state_payload['LF_SPORT_MOD_STATE']['mode']
+                        _dog_state = state_payload['LF_SPORT_MOD_STATE']['error_code']
                     except:
                         std_out('Payload doesnt contain dog mode')
                         pass
@@ -89,7 +89,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                     pass
                 else:
                     mpc_state = mpc_payload
-        
+
         if dog_state is not None:
             dog_state_name = None
             try:
@@ -118,29 +118,26 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
         # We are moving the axes
         if any([joystick_status[item] for item in joystick_status if 'Axis' in item]):
             std_out ('Movement with axis!')
+            print (dog_state_name, dog_state)
             match dog_state:
-                # TODO - These commands need to be rechecked based on dog
-                # mosquitto_sub -h localhost -t /out/state/LF_SPORT_MOD_STATE | jq .LF_SPORT_MOD_STATE.error_code
-                case DogState.BUSY | DogState.MOVE | DogState.MOVING | DogState.AI_AGILE | DogState.AI_FREEAVOID | DogState.AI_FREEBOUND | DogState.AI_WALKSTAIR | DogState.AI_FREEJUMP | DogState.AI_WALKUPRIGHT | DogState.AI_CROSSSTEP:
+                case DogState.AGILE | DogState.BALANCE_STANDING | DogState.REGULAR_WALKING | DogState.REGULAR_TROTTING | DogState.REGULAR_ENDURANCE | DogState.FREEAVOID | DogState.FREEBOUND | DogState.FREEJUMP | DogState.CLASSIC | DogState.HANDSTAND | DogState.CROSSSTEP | DogState.WALKUPRIGHT:
 
                     outgoing_topic = MOVE_TOPIC
 
-                    # TODO make this with modifiers to joystick axes behaviour. 
+                    # TODO make this with modifiers to joystick axes behaviour.
                     # This right now mimicks the approach in the bluetooth joystick
                     if not joystick_status["R2"]:
-                        
+
                         cmd = Move(
                             x = round(joystick_status["Axis 1"] * vx_range, 2),
                             y = round(joystick_status["Axis 0"] * vy_range, 2),
                             z = round(joystick_status["Axis 2"] * vyaw_range, 2)
                         )
 
-                        print (cmd)
-
                         if cmd is not None:
                             std_out (f'Robot command: {cmd.as_dict()}')
                             await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
-                        
+
                         # While moving, we don't send any Euler
                         roll_range = 0
                         yaw_range = 0
@@ -181,11 +178,11 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
 
             for item in joystick_status:
                 if 'Axis' in item or 'Hat' in item: continue
-                
+
                 if joystick_status[item]:
 
                     cmd_class = joystick_handler.buttons[item].command
-                    
+
                     if cmd_class is not None:
                         # print (cmd_class)
                         # if cmd_class in SAFETY_CMD:
@@ -196,7 +193,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
 
                         # TODO Could the joystick have associated parameter?
 
-                        # TODO 
+                        # TODO
                         # Check DogState for Pose or other toggle commands
                         # Is there anything reflecting those?
                         # case DogState.MOVE | DogState.MOVING | DogState.AI:
@@ -213,7 +210,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
             # std_out (f'Robot command: {cmd.as_dict()}')
             await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
 
-        # This sleep is needed to receive mqtt commands. 
+        # This sleep is needed to receive mqtt commands.
         # Could it be avoided with an additional task through the joystick_handler?
         await asyncio.sleep(0.001)
 

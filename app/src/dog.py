@@ -16,11 +16,10 @@ class Dog:
         self.state = {
             'LOW_STATE': None,
             'LF_SPORT_MOD_STATE': None,
-            'MULTIPLE_STATE': None, 
+            'MULTIPLE_STATE': None,
             'WIRELESS': None
         }
-        self._mode = None
-        self._motion_switcher = None
+        self._dog_state = None
         self.conn = conn
         self.lock = asyncio.Lock()
         self.dry_run = dry_run
@@ -35,7 +34,7 @@ class Dog:
         # Audio hub
         if not self.dry_run:
             self.audio_hub = WebRTCAudioHub(self.conn)
-        
+
         return
 
     async def get_audio_list(self, reload = True):
@@ -49,9 +48,9 @@ class Dog:
             if response and isinstance(response, dict):
                 data_str = response.get('data', {}).get('data', '{}')
                 self.audio_list = json.loads(data_str).get('audio_list', [])
-        
+
         return self.audio_list
-    
+
     def get_audio_uuid(self, audio_file = None):
         if self.dry_run: return
 
@@ -63,17 +62,17 @@ class Dog:
         # Check if file already exists by CUSTOM_NAME and store UUID
         if self.audio_list is None:
             return None
-        
+
         existing_audio = next((audio for audio in self.audio_list if audio['CUSTOM_NAME'] == filename), None)
-        
+
         if existing_audio:
             uuid = existing_audio['UNIQUE_ID']
             std_out(f"Audio file {filename} found. UUID: {uuid}")
         else:
             uuid = None
-        
+
         return uuid
-    
+
     async def upload_audio_file(self, audio_file = None):
         if self.dry_run: return
 
@@ -84,7 +83,7 @@ class Dog:
         # Check if file already exists by CUSTOM_NAME and store UUID
         await self.get_audio_list(reload=True)
         uuid = self.get_audio_uuid(audio_file)
-        
+
         if uuid is None:
             filename = os.path.splitext(audio_file)[0]
             std_out(f"Audio file {filename} not found, proceeding with upload")
@@ -103,7 +102,7 @@ class Dog:
             await self.get_audio_list(reload=True)
             uuid = self.get_audio_uuid(audio_file)
             std_out(f"New audio file uuid: {uuid}")
-        
+
         return uuid
 
     async def play_dog_audio(self, audio_file=None):
@@ -121,7 +120,7 @@ class Dog:
         if uuid is None:
             std_out("File not found. Upload it first!")
             return None
-        
+
         await self.audio_hub.play_by_uuid(uuid)
 
     async def add_media_player_track(self, track_path = ''):
@@ -136,7 +135,7 @@ class Dog:
         if audio_file_path == '':
             std_out(f'Need at least a path to play')
             return None
-                
+
         # TODO check file paths in absolute mode
         if os.path.exists(audio_file_path):
             std_out (f'Playing local audio file: {audio_file_path}')
@@ -149,10 +148,10 @@ class Dog:
         if audio_file_path == '':
             std_out(f'Need at least a path to play')
             return None
-        
+
         std_out (f'Playing stream audio track: {audio_file_path}')
         if self.dry_run: return
-        
+
         await self.add_media_player_track(audio_file_path)
 
     async def send_audio_command(self, command):
@@ -206,7 +205,7 @@ class Dog:
             std_out('Sending command post_hook')
             cmd = Command(command.post_hook)
             await self.send_async_command(cmd)
-        
+
         std_out('Done')
 
     def send_command(self, command):
@@ -228,13 +227,6 @@ class Dog:
         if self.broadcast:
             await self.mqtt_handler.publish(topic=f'{STATE_TOPIC}/{channel}', \
                 payload=json.dumps(self.state))
-        
-            await self.publish_motion_switcher_mode()
-    
-    async def publish_motion_switcher_mode(self):
-        if self.broadcast:
-            await self.mqtt_handler.publish(topic=f'{MODE_TOPIC}/mode', \
-                payload=json.dumps(self.motion_switcher))
 
     def lowstate_callback(self, message):
         current_message = message['data']
@@ -252,26 +244,14 @@ class Dog:
         # Update state
         self.state['LF_SPORT_MOD_STATE'] = current_message
         # Update mode (DogState)
-        self._mode = self.state['LF_SPORT_MOD_STATE']['mode']
-        # Eager find motion switcher (DogMode)
-        for st in CMD_STATES:
-            if self._mode in CMD_STATES[st]:
-                self._motion_switcher = st
-        # Current 
+        self._dog_state = self.state['LF_SPORT_MOD_STATE']['error_code']
+
+        # Current
         asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
 
     def wireless_callback(self, message):
         print (message)
 
     @property
-    def mode(self):
-        return self._mode
-
-    @property
     def dog_state(self):
-        return DogState(self.mode)
-
-    @property
-    def motion_switcher(self):
-        return self._motion_switcher
-
+        return DogState(self._dog_state)
