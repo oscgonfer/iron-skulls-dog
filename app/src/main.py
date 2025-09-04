@@ -5,6 +5,7 @@ import json
 import asyncio
 import os
 import argparse
+from queue import Queue
 
 # Config
 from config import *
@@ -14,15 +15,14 @@ from tools import *
 from dog import Dog
 from command import *
 from command_handler import CommandHandler
-
 from mqtt_handler import MQTTHandler
+# from video_handler import VideoHandler
 
 # GO2 WEBRTC DRIVER
 from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection, WebRTCConnectionMethod
 from go2_webrtc_driver.constants import *
 
 async def main():
-
     queue = asyncio.Queue()
     std_out('Creating tasks...')
 
@@ -31,6 +31,10 @@ async def main():
             tg.create_task(mqtt_handler.bridge_incomming(topic=topic, queue=queue))
 
         tg.create_task(command_handler.dispatch_commands(queue=queue))
+
+        if args.with_video:
+            tg.create_task(video_handler.handle_frame())
+
         std_out ("Looping forever...")
 
 if __name__ == "__main__":
@@ -42,6 +46,10 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--broadcast", default=False, dest='broadcast', action='store_true'
+    )
+
+    parser.add_argument(
+        "--with-video", default=False, action='store_true'
     )
 
     args = parser.parse_args()
@@ -68,6 +76,17 @@ if __name__ == "__main__":
     if not args.dry_run:
         # Connect to the dog
         loop.run_until_complete(dog.connect())
+
+        print ('Connected to dog')
+
+        if args.with_video:
+            # Switch video channel on and start receiving video frames
+            conn.video.switchVideoChannel(True)
+            # Create video handler
+            video_handler = VideoHandler(dog)
+            # Add callback to handle received video frames
+            conn.video.add_track_callback(video_handler.recv_camera_stream)
+
         # Subscribe to each feedback channel and add a callback to it
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LOW_STATE'], \
             dog.lowstate_callback)
