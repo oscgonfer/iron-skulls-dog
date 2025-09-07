@@ -38,6 +38,8 @@ class Dog:
         
         return
 
+    def switchVideoChannel(self, switch):
+        self.conn.video.switchVideoChannel(switch)
     async def get_audio_list(self, reload = True):
         # From go2_webrtc_connect example
         if self.dry_run: return

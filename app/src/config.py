@@ -14,6 +14,10 @@ CAPTURE_PATH = 'capture'
 MQTT_BROKER = "localhost"
 MQTT_RECONNECT = 5
 
+# 0MQ
+ZEROMQ_BROKER = "localhost"
+ZEROMQ_PORT= 5555
+
 # Message filter
 DOG_FILTER = "/dog"
 CMD_FILTER = "/cmd"

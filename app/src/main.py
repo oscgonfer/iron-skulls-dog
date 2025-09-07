@@ -16,7 +16,7 @@ from dog import Dog
 from command import *
 from command_handler import CommandHandler
 from mqtt_handler import MQTTHandler
-# from video_handler import VideoHandler
+from video_handler import VideoHandler
 
 # GO2 WEBRTC DRIVER
 from go2_webrtc_driver.webrtc_driver import Go2WebRTCConnection, WebRTCConnectionMethod
@@ -31,9 +31,6 @@ async def main():
             tg.create_task(mqtt_handler.bridge_incomming(topic=topic, queue=queue))
 
         tg.create_task(command_handler.dispatch_commands(queue=queue))
-
-        if args.with_video:
-            tg.create_task(video_handler.handle_frame())
 
         std_out ("Looping forever...")
 
@@ -79,14 +76,6 @@ if __name__ == "__main__":
 
         print ('Connected to dog')
 
-        if args.with_video:
-            # Switch video channel on and start receiving video frames
-            conn.video.switchVideoChannel(True)
-            # Create video handler
-            video_handler = VideoHandler(dog)
-            # Add callback to handle received video frames
-            conn.video.add_track_callback(video_handler.recv_camera_stream)
-
         # Subscribe to each feedback channel and add a callback to it
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LOW_STATE'], \
             dog.lowstate_callback)
@@ -94,6 +83,15 @@ if __name__ == "__main__":
             dog.multiplestate_callback)
         dog.conn.datachannel.pub_sub.subscribe(RTC_TOPIC['LF_SPORT_MOD_STATE'], \
             dog.sportstate_callback)
+
+        if args.with_video:
+            # Switch video channel on and start receiving video frames
+            dog.switchVideoChannel(True)
+            # Create video handler
+            video_handler = VideoHandler(dog)
+            # Add callback to handle received video frames
+            dog.conn.video.add_track_callback(video_handler.recv_camera_stream)
+
     try:
         loop.run_until_complete(main())
     except KeyboardInterrupt:
