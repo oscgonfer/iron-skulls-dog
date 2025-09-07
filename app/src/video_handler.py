@@ -34,4 +34,10 @@ class VideoHandler:
                 pass
             await asyncio.sleep(0.01)
 
+    # Define a callback function to handle LIDAR messages when received.
+    def lidar_callback(self, message):
+        # Print the data received from the LIDAR sensor.
+        print(message["data"])
+
+
 

@@ -49,6 +49,10 @@ if __name__ == "__main__":
         "--with-video", default=False, action='store_true'
     )
 
+    parser.add_argument(
+        "--with-lidar", default=False, action='store_true'
+    )
+
     args = parser.parse_args()
 
     if not args.dry_run:
@@ -91,6 +95,17 @@ if __name__ == "__main__":
             video_handler = VideoHandler(dog)
             # Add callback to handle received video frames
             dog.conn.video.add_track_callback(video_handler.recv_camera_stream)
+
+        if args.with_lidar:
+            lidar_handler = VideoHandler(dog)
+            # Disable traffic saving mode on the data channel.
+            loop.run_until_complete(dog.disableTrafficSaving(True))
+
+            # Publish a message to turn the LIDAR sensor on.
+            dog.conn.datachannel.pub_sub.publish_without_callback("rt/utlidar/switch", "on")
+
+            # Subscribe to the LIDAR voxel map data and use the callback function to process incoming messages.
+            dog.conn.datachannel.pub_sub.subscribe("rt/utlidar/voxel_map_compressed", lidar_handler.lidar_callback)
 
     try:
         loop.run_until_complete(main())
