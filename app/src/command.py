@@ -5,6 +5,8 @@ from enum import IntEnum
 
 # TODO When crouching down, it comes back to a non-consistent mode after pressing BalanceStand
 # Should we change the balance stand button depending?
+
+# TODO Post hook for most async commands for making it work
 class DogState(IntEnum):
     AGILE=100 # Agile
     DAMPING=1001 # Damp
@@ -24,14 +26,20 @@ class DogState(IntEnum):
     FREEAVOID=2007 # AI FreeAvoid mode
     FREEBOUND=2008 # AI FreeBound mode
     FREEJUMP=2009 # AI FreeJump mode
-    CLASSIC=2010 # Classic Normal mode
+    CLASSIC=2010  # Classic Normal mode
     HANDSTAND=2011 # AI Handstand mode
     FRONTFLIP=2012
     BACKFLIP=2013
     LEFTFLIP=2014
     CROSSSTEP=2016 # AI CrossStep mode
     WALKUPRIGHT=2017 # AI WalkUpRight mode
+    DOWNWALKUPRIGHT=2018 # Going back down from AI WalkUpRight mode
     TOWING=2019 # ?
+
+class DogMode(Enum):
+    NORMAL = DogState.BALANCE_STANDING
+    AI = DogState.AGILE
+    # AI_FREEJUMP = 3
 
 DOGSTATE_AVOID_ASYNC_CMDS = [
     DogState.REGULAR_WALKING,
@@ -56,6 +64,14 @@ DOGSTATE_AVOID_MOVING_CMDS = [
     DogState.LEFTFLIP
 ]
 
+DOGSTATE_AVOID_EULER_CMDS = [
+    DogState.AGILE,
+    DogState.FREEAVOID,
+    DogState.FREEBOUND,
+    DogState.FREEJUMP,
+    DogState.HANDSTAND
+]
+
 CMD_LIMITS = {
     "MOVE": {
         "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
@@ -65,6 +81,16 @@ CMD_LIMITS = {
         "yaw": {"range": [-0.65, 0.6], "mpc_key": "FADER_7"}, # Limited
         "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
     },
+    # Same as STANDING
+    "POSE": {
+        "vx": {"range": [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
+        "vy": {"range":  [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
+        "vyaw": {"range":  [0, 0], "mpc_key": "FADER_6"}, # No move range in standing
+        "roll": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
+        "pitch": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
+        "yaw": {"range": [-0.6, 0.6], "mpc_key": "FADER_7"}
+    },
+    # TODO Remove
     "STANDING": {
         "vx": {"range": [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
         "vy": {"range":  [0, 0], "mpc_key": "FADER_5"}, # No move range in standing
@@ -73,6 +99,49 @@ CMD_LIMITS = {
         "pitch": {"range": [-0.75, 0.75], "mpc_key": "FADER_7"},
         "yaw": {"range": [-0.6, 0.6], "mpc_key": "FADER_7"}
     },
+    # Same as moving
+    "BALANCE_STANDING": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    # Same as moving
+    "REGULAR_WALKING": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    "REGULAR_TROTTING": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    "REGULAR_ENDURANCE": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    "HANDSTAND": {
+        "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
+        "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-4, 4], "mpc_key": "FADER_6"},
+        "roll": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "yaw": {"range": [-0.75, 0.6], "mpc_key": "FADER_7"}, # Limited
+        "pitch": {"range": [-0.5, 0.4], "mpc_key": "FADER_7"} # Limited
+    },
+    # TODO Remove
     "MOVING": {
         "vx": {"range": [-2.5, 3.8], "mpc_key": "FADER_5"}, # NOK
         "vy": {"range": [-1, 1], "mpc_key": "FADER_5"},
@@ -106,6 +175,14 @@ CMD_LIMITS = {
         "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
     },
     "FREEAVOID": {
+        "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
+        "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
+        "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
+        "roll": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "yaw": {"range": [0, 0], "mpc_key": "FADER_7"}, # OK it being 0?
+        "pitch": {"range": [0, 0], "mpc_key": "FADER_7"} # OK it being 0?
+    },
+    "CLASSIC": {
         "vx": {"range": [-0.6, 0.6], "mpc_key": "FADER_5"},
         "vy": {"range": [-0.4, 0.4], "mpc_key": "FADER_5"},
         "vyaw": {"range": [-0.8, 0.8], "mpc_key": "FADER_6"},
@@ -999,6 +1076,7 @@ class Heart(Command):
         super().__init__(payload, associated_states=[DogState.BUSY])
 
 # 1061 - Normal mode walk style DON'T USE
+# TODO - USE!
 class StaticWalk(Command):
     def __init__(self):
         payload = {
@@ -1176,7 +1254,8 @@ class FreeAvoid(Command):
         super().__init__(payload, associated_states=[DogState.FREEAVOID], toggle=True)
 
 # 2049
-# Set to true to enter classic gait mode, false to exit and enter agile mode.
+# Set to true to enter classic gait mode,
+# false to exit and enter agile mode.
 class ClassicWalk(Command):
     def __init__(self, flag: bool = True):
         payload = {
@@ -1193,7 +1272,6 @@ class ClassicWalk(Command):
         super().__init__(payload, associated_states=[DogState.CLASSIC], toggle=True)
 
 # 2049
-# Set to true to enter classic gait mode, false to exit and enter agile mode.
 class AIWalk(Command):
     def __init__(self):
         payload = {
@@ -1466,23 +1544,24 @@ class SetVolume(Command):
 #         }
 #         super().__init__(payload, toggle=True)
 
-# TODO Remove
-# class SetObstacleAvoidance(Command):
-#     def __init__(self, flag: bool = False):
-#         payload = {
-#             "topic": RTC_TOPIC["OBSTACLES_AVOID"],
-#             "options": {
-#                 "parameter": {"enable": flag},
-#                 "api_id": 1001
-#             },
-#             "expect_reply": False,
-#             "update_switcher_mode": False,
-#             "post_hook": GetObstacleAvoidance(),
-#             "additional_wait": 0
-#         }
-#         super().__init__(payload, toggle=True)
+# TODO CHECK
+class SetObstacleAvoidanceOff(Command):
+    def __init__(self, flag: bool = False):
+        payload = {
+            "topic": RTC_TOPIC["OBSTACLES_AVOID"],
+            "options": {
+                "parameter": {"enable": flag},
+                "api_id": 1001
+            },
+            "expect_reply": False,
+            "update_switcher_mode": False,
+            "post_hook": GetObstacleAvoidance(),
+            "additional_wait": 0
+        }
+        super().__init__(payload, toggle=True)
 
-
+# 2058
+# Turns off obstacle avoidance
 class SwitchAvoidMode(Command):
     def __init__(self):
         payload = {

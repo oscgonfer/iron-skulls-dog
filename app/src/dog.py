@@ -20,6 +20,7 @@ class Dog:
             'WIRELESS': None
         }
         self._dog_state = None
+        self._dog_mode = None
         self.conn = conn
         self.lock = asyncio.Lock()
         self.dry_run = dry_run
@@ -188,6 +189,7 @@ class Dog:
                 std_out('Command expects reply')
                 if response['data']['header']['status']['code'] == 0:
                     data = json.loads(response['data']['data'])
+                    # TODO update switcher mode here
                     if command.update_switcher_mode:
                         self._motion_switcher = data['name']
                     await self.publish_response(command.topic, response=data)
@@ -228,6 +230,11 @@ class Dog:
             await self.mqtt_handler.publish(topic=f'{STATE_TOPIC}/{channel}', \
                 payload=json.dumps(self.state))
 
+    async def publish(self, channel, payload):
+        if self.broadcast:
+            await self.mqtt_handler.publish(topic=channel, \
+                payload=json.dumps(payload))
+
     def lowstate_callback(self, message):
         current_message = message['data']
         self.state['LOW_STATE'] = current_message
@@ -244,14 +251,32 @@ class Dog:
         # Update state
         self.state['LF_SPORT_MOD_STATE'] = current_message
         # Update mode (DogState)
-        self._dog_state = self.state['LF_SPORT_MOD_STATE']['error_code']
+        self._dog_state = DogState(self.state['LF_SPORT_MOD_STATE']['error_code'])
 
         # Current
         asyncio.gather(self.publish_state('LF_SPORT_MOD_STATE'))
+
+        try:
+            self._dog_mode = DogMode(self._dog_state)
+        except:
+            pass
+
+        dog_mode_name = None
+        try:
+            dog_mode_name = self.dog_mode.name
+        except:
+            pass
+
+        asyncio.gather(self.publish(SIMPLE_STATE_TOPIC, {'state': self.dog_state, \
+            'mode': dog_mode_name}))
 
     def wireless_callback(self, message):
         print (message)
 
     @property
     def dog_state(self):
-        return DogState(self._dog_state)
+        return self._dog_state
+
+    @property
+    def dog_mode(self):
+        return self._dog_mode

@@ -66,7 +66,7 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
             pass
         else:
             # Add here topics to subscribe
-            if STATE_TOPIC in source.value:
+            if SIMPLE_STATE_TOPIC in source.value:
                 try:
                     state_payload = json.loads(data)
                 except json.decoder.JSONDecodeError:
@@ -74,12 +74,14 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                     pass
                 else:
                     try:
-                        _dog_state = state_payload['LF_SPORT_MOD_STATE']['error_code']
+                        _dog_state = state_payload['state']
+                        _dog_mode = state_payload['mode']
                     except:
                         std_out('Payload doesnt contain dog mode')
                         pass
                     else:
                         dog_state = _dog_state
+                        dog_mode = _dog_mode
 
             if MPC_TOPIC in source.value:
                 try:
@@ -90,8 +92,8 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                 else:
                     mpc_state = mpc_payload
 
+        dog_state_name = None
         if dog_state is not None:
-            dog_state_name = None
             try:
                 dog_state_name = DogState(dog_state).name
             except:
@@ -144,23 +146,24 @@ async def joystick_bridge(joystick_handler=None, queue=None, mqtt_handler=None):
                         if not joystick_status["Axis 3"]:
                             pitch_range = 0
 
-                    if roll_range or pitch_range or yaw_range:
-                        
-                        cmd = Euler(
-                            roll = round(joystick_status["Axis 0"]\
-                                * roll_range, 2),
-                            pitch = round(joystick_status["Axis 3"]\
-                                * pitch_range, 2),
-                            yaw = round(joystick_status["Axis 1"]\
-                                * yaw_range, 2)
-                        )
+                    if dog_state not in DOGSTATE_AVOID_EULER_CMDS:
+                        if roll_range or pitch_range or yaw_range:
 
-                        if cmd is not None:
-                            std_out (f'Robot command: {cmd.as_dict()}')
-                            await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+                            cmd = Euler(
+                                roll = round(joystick_status["Axis 0"]\
+                                    * roll_range, 2),
+                                pitch = round(joystick_status["Axis 3"]\
+                                    * pitch_range, 2),
+                                yaw = round(joystick_status["Axis 1"]\
+                                    * yaw_range, 2)
+                            )
 
-                case DogState.STANDING:
-                    
+                            if cmd is not None:
+                                std_out (f'Robot command: {cmd.as_dict()}')
+                                await mqtt_handler.publish(topic=outgoing_topic, payload=cmd.to_json())
+
+                case DogState.POSE:
+
                     cmd = Euler(
                         roll = round(joystick_status["Axis 0"]\
                             * roll_range, 2),

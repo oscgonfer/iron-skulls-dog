@@ -136,7 +136,7 @@ COLOR_EFFECT_MAP = {
                 "disabled": {"color": APCMK2PadColor.RED, "effect": APCMK2PadEffect.ON_10}
             }
         }
-    }, 
+    },
     "buttons": {
         "normal": {
             "null": {
@@ -274,9 +274,9 @@ COLOR_EFFECT_MAP = {
 ACTION_MAP = {
     "normal": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "VOLUME": APCMK2Action(command=StaticWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            # "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=AIWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.record, atype=APCMK2ActionType.apc_mode_change),
             "UP": APCMK2Action(command=SpeedLevelHigh, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
@@ -289,8 +289,8 @@ ACTION_MAP = {
         "faders": {
             "FADER_1": APCMK2Action(command=SetVolume, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             # Sensitivity for joystick
             "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
             "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
@@ -300,9 +300,9 @@ ACTION_MAP = {
     },
     "preview": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "VOLUME": APCMK2Action(command=StaticWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            # "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=AIWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "UP": APCMK2Action(command=SpeedLevelHigh, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
@@ -314,8 +314,8 @@ ACTION_MAP = {
         "faders": {
             "FADER_1": APCMK2Action(command=SetVolume, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             # Sensitivity for joystick
             "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
             "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
@@ -325,9 +325,9 @@ ACTION_MAP = {
     },
     "record": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "VOLUME": APCMK2Action(command=StaticWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            # "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=AIWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "REC_ARM": APCMK2Action(command=None, payload=APCMK2Mode.normal, atype=APCMK2ActionType.apc_mode_change),
             "UP": APCMK2Action(command=SpeedLevelHigh, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
@@ -339,8 +339,8 @@ ACTION_MAP = {
         "faders": {
             "FADER_1": APCMK2Action(command=SetVolume, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             # Sensitivity for joystick
             "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
             "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
@@ -350,9 +350,9 @@ ACTION_MAP = {
     },
     "recording": {
         "buttons": {
-            "VOLUME": APCMK2Action(command=SetMotionSwitcherNormal, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
-            "SEND": APCMK2Action(command=SetMotionSwitcherAI, topic=SWITCHER_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "VOLUME": APCMK2Action(command=StaticWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            # "PAN": APCMK2Action(command=SetMotionSwitcherAdvanced, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
+            "SEND": APCMK2Action(command=AIWalk, topic=SPORT_TOPIC, atype=APCMK2ActionType.dog_mode_toggle),
             "SHIFT": APCMK2Action(command=None, payload=APCMK2Mode.preview, atype=APCMK2ActionType.apc_mode_toggle),
             "UP": APCMK2Action(command=SpeedLevelHigh, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
             "DOWN": APCMK2Action(command=SpeedLevelLow, topic=SPORT_TOPIC, atype=APCMK2ActionType.command),
@@ -365,8 +365,8 @@ ACTION_MAP = {
         "faders": {
             "FADER_1": APCMK2Action(command=SetVolume, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
             "FADER_2": APCMK2Action(command=SetBrightness, topic=VUI_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
-            "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_3": APCMK2Action(command=BodyHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
+            # "FADER_4": APCMK2Action(command=FootRaiseHeight, topic=MOVE_TOPIC, atype=APCMK2ActionType.command),
             # Sensitivity for joystick
             "FADER_5": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
             "FADER_6": APCMK2Action(command=None, topic=None, atype=APCMK2ActionType.unassigned),
@@ -406,16 +406,16 @@ for item in range(APC_MK2_NUM_PADS):
     if item <APC_MK2_NUM_PADS/2:
 
         # Commands
-        ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=command, topic=topic, 
+        ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=command, topic=topic,
             payload=payload, atype=atype)
 
-        ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=command, topic=topic, 
+        ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=command, topic=topic,
             payload=payload, atype=atype)
 
-        ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=command, topic=topic, 
+        ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=command, topic=topic,
             payload=payload, atype=atype)
 
-        ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=command, topic=topic, 
+        ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=command, topic=topic,
             payload=payload, atype=atype)
 
     else:
@@ -428,8 +428,8 @@ for item in range(APC_MK2_NUM_PADS):
             ACTION_MAP["record"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
 
             ACTION_MAP["recording"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
-            
-        else: 
+
+        else:
             ACTION_MAP["normal"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
 
             ACTION_MAP["preview"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)

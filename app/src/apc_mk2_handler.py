@@ -12,7 +12,7 @@ import traceback
 
 class APCMK2Handler(StateMachine):
     action_map = ACTION_MAP.copy()
-    
+
     _ = States.from_enum(APCMK2Mode, initial=APCMK2Mode.normal)
 
     ev_normal = _.record.to(_.normal)
@@ -31,22 +31,22 @@ class APCMK2Handler(StateMachine):
 
     _status = {}
 
-    _dog_mode = None # DogMode in dog.py Normal, Advance, AI
     _dog_state = None # DogState in dog.py
+    _dog_mode = None # Made up mode
 
     def __init__(self, port=APC_PORT_NAME):
         self.port = port
         self.midi_in, _ = open_midiinput(self.port)
         self.midi_out, _ = open_midioutput(self.port)
         self.midi_in.set_callback(self.message_callback)
-        # TODO Read status of the apc
 
+        # TODO Read status of the apc
         self.pads = {}
         self.buttons = {}
         self.faders = {}
 
         super(APCMK2Handler, self).__init__()
-        
+
         self.assign_pads()
         self.assign_buttons()
         self.assign_faders()
@@ -115,7 +115,7 @@ class APCMK2Handler(StateMachine):
                 self.action_map["record"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
 
                 self.action_map["recording"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.subprocess)
-            else: 
+            else:
                 self.action_map["normal"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
 
                 self.action_map["preview"]["pads"][item] = APCMK2Action(command=None, atype=APCMK2ActionType.unassigned)
@@ -123,7 +123,7 @@ class APCMK2Handler(StateMachine):
                 self.action_map["record"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.START, name=item), topic=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
 
                 self.action_map["recording"]["pads"][item] = APCMK2Action(command=CaptureCommand(action=CaptureAction.STOP, name=item), topic=CAPTURE_TOPIC, atype=APCMK2ActionType.capture)
-    
+
     def assign_pads(self):
         for item in range(APC_MK2_NUM_PADS):
             if item not in self.action_map[self.current_state.id]["pads"]: continue
@@ -142,20 +142,24 @@ class APCMK2Handler(StateMachine):
 
     def assign_faders(self):
         for item in APCMK2FaderName:
-            if item.name not in self.action_map[self.current_state.id]["faders"]: continue 
+            if item.name not in self.action_map[self.current_state.id]["faders"]: continue
             action = self.action_map[self.current_state.id]["faders"][item.name]
             self.faders[item.value] = APCMK2Fader(item.value, item.name, fader_defaults[item.name], action = action)
-        
+
     def close(self):
         self.midi_in.close_port()
         self.midi_out.close_port()
 
-    def update_dog_mode(self, mode):
+    def update_dog_state(self, state, mode):
+        # Updates value of DogState
+        self._dog_state = state
+        if self._dog_state == None: return
+
+        # TODO
         # Updates mode mode (Normal, Advanced, AI)
         if mode == 'null': self._dog_mode = None
         else: self._dog_mode = mode
 
-        # TODO Associate available pads with DogMode?
         for button in self.buttons.values():
             if button.action.type == APCMK2ActionType.dog_mode_toggle:
                 if self._dog_mode is not None:
@@ -165,12 +169,6 @@ class APCMK2Handler(StateMachine):
                         self.buttons[button.channel].release()
                     self.light_button(button=button)
 
-    def update_dog_state(self, state):
-        # Updates value of DogState
-        self._dog_state = state
-
-        if self._dog_state == None: return
-        
         for pad in self.pads.values():
             if pad.action.type == APCMK2ActionType.command:
 
@@ -178,14 +176,14 @@ class APCMK2Handler(StateMachine):
                 pad_cmd=pad.action.command()
 
                 if pad_cmd.associated_states is None: continue
-
+                # TODO REVIEW
                 if any([self._dog_state == cmd_assoc_state.value for cmd_assoc_state in pad_cmd.associated_states]):
                     self.pads[pad.channel].press()
                 else:
                     self.pads[pad.channel].release()
-            
+
         self.update_lights()
-            
+
     def update_lights(self):
         for pad in self.pads.values():
             # if pad.trigger:
@@ -199,12 +197,12 @@ class APCMK2Handler(StateMachine):
 
     def light_button(self, button: APCMK2Button):
         self.midi_out.send_message([0x90, button.channel, button.effect.value])
-    
+
     @property
     def status(self):
         # Representation of current apc in a dict with names
         return self._status
-    
+
     def update_status(self):
         for pad in self.pads.values():
             self._status[pad.name] = pad.to_dict()
@@ -214,10 +212,10 @@ class APCMK2Handler(StateMachine):
             self._status[fader.name] = fader.to_dict()
 
     def trigger_pad_action(self, note, channel, value):
-        if self.locked: 
+        if self.locked:
             std_out('WARNING: Locked')
             return
-        
+
         action = self.pads[channel].action
 
         if self.target_pad is None:
@@ -234,27 +232,27 @@ class APCMK2Handler(StateMachine):
                     self.pads[channel].press()
 
                 elif note == NOTE_ON and channel == self.target_pad:
-                    
+
                     self.action_map["normal"]["pads"][channel]=APCMK2Action(command='play', payload=f'{channel}', atype=APCMK2ActionType.subprocess)
                     self.action_map["preview"]["pads"][channel]=APCMK2Action(command='preview', payload=f'{channel}', atype=APCMK2ActionType.subprocess)
 
                     self.action_map["record"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
                     self.action_map["recording"]["pads"][channel]=APCMK2Action(command=None,  atype=APCMK2ActionType.subprocess)
-                
+
                 elif note == NOTE_OFF and channel == self.target_pad and self.current_state.id == 'recording':
 
                     # TODO Sometimes the recording doesn't get stored. Maybe because the thing is busy?
                     self.send('ev_finish_recording')
                     self.pads[channel].release()
                     self.target_pad = None
-                
+
         self.update_lights()
 
     def trigger_button_action(self, note, channel, value):
-        if self.locked: 
+        if self.locked:
             std_out('Locked')
             return
-        
+
         action = self.buttons[channel].action
         update_state = False
         # Careful when printing payloads, they don't always have names
@@ -264,11 +262,11 @@ class APCMK2Handler(StateMachine):
             if note == NOTE_ON:
                 self.buttons[channel].press()
                 self.send('ev_'+action.payload.name)
-                
+
             elif note == NOTE_OFF:
                 self.buttons[channel].release()
                 self.send('ev_finish_'+action.payload.name)
-                
+
         elif action.type == APCMK2ActionType.apc_mode_change:
             if note == NOTE_ON:
                 std_out ('Sending', action.payload.name)
@@ -278,7 +276,7 @@ class APCMK2Handler(StateMachine):
                     self.buttons[channel].release()
                 else:
                     self.buttons[channel].press()
-        
+
         elif action.type == APCMK2ActionType.command:
             if note == NOTE_ON:
                 if action.topic == RESUME_TOPIC:
@@ -288,7 +286,7 @@ class APCMK2Handler(StateMachine):
 
         std_out ('Updated state:', self.current_state)
         self.update_lights()
-    
+
     def reset_triggers(self):
         for pad in self.pads.values():
             self.pads[pad.channel].trigger = False
@@ -296,23 +294,23 @@ class APCMK2Handler(StateMachine):
             self.buttons[button.channel].trigger = False
         for fader in self.faders.values():
             self.faders[fader.channel].trigger = False
-        
+
         self.update_status()
-    
+
     def message_callback(self, event, data=None):
         message, deltatime = event
         # MIDI_EVENT, CHANNEL, VALUE
         note = message[0]
         channel = int(message[1])
         value = int(message[2])
-        
+
         if note == CONTROLLER_CHANGE:
             # Fader change
             if channel in self.faders:
                 self.faders[channel].input_state = value
                 self.faders[channel].trigger = True
                 # print (f'Fader: ', self.faders[channel].name, self.faders[channel].input_state)
-        
+
         elif note == NOTE_OFF or note == NOTE_ON:
             # Pad or button pressed
             if channel in self.pads:

@@ -62,6 +62,9 @@ INCOMING_TOPICS = {
 STATE_FILTER = f"{OUT_FILTER}/state/#"
 STATE_TOPIC = STATE_FILTER.replace("/#","")
 
+SIMPLE_STATE_FILTER = f"{OUT_FILTER}/simple_state/#"
+SIMPLE_STATE_TOPIC = SIMPLE_STATE_FILTER.replace("/#","")
+
 MODE_FILTER = f"{OUT_FILTER}/mode/#"
 MODE_TOPIC = MODE_FILTER.replace("/#","")
 
